@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>홈 · 바이타이밍</title>
+  <meta name="description" content="실시간 가격 비교와 AI 구매 적기 판단 서비스">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app-nav"></div>
+<main class="container py-4" id="app">
+  <section class="hero p-4 p-md-5 mb-4">
+    <h1 class="fw-bold mb-2">지금 사도 될까요?</h1>
+    <p class="lead mb-4">쇼핑몰 가격을 1시간마다 비교하고, AI가 과거 패턴으로 구매 적기를 알려 드립니다.</p>
+    <form class="d-flex gap-2" action="search.html"><input class="form-control form-control-lg" name="q" placeholder="상품명 검색 (예: 이어폰, 세제)" aria-label="상품 검색">
+    <button class="btn btn-light btn-lg px-4" aria-label="검색"><i class="bi bi-search"></i></button></form>
+  </section>
+  <div id="alert-summary"></div>
+  <h2 class="section-title h5">오늘의 구매 적기</h2>
+  <div class="row g-3" id="timing-list"></div>
+  <h2 class="section-title h5">7일 가격 하락 추천</h2>
+  <div class="row g-3" id="drop-list"></div>
+</main>
+<div id="app-footer"></div>
+<script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module" src="js/pages/home.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+# Web / API
+fastapi==0.115.12
+uvicorn[standard]==0.34.3
+pydantic==2.11.7
+pydantic-settings==2.9.1
+email-validator==2.2.0
+
+# Database (MySQL 8.x / TiDB)
+SQLAlchemy==2.0.41
+PyMySQL==1.1.1
+cryptography==44.0.3
+
+# Auth
+PyJWT==2.10.1
+bcrypt==4.3.0
+
+# Generative AI (Google Gemini)
+google-genai==1.20.0
+
+# Data / ML / Report
+numpy==2.2.6
+pandas==2.2.3
+scikit-learn==1.6.1
+joblib==1.5.1
+matplotlib==3.10.3
+seaborn==0.13.2
+openpyxl==3.1.5

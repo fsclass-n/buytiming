@@ -1,0 +1,53 @@
+:root {
+  --brand: #6f42c1;
+  --brand-dark: #59359a;
+  --bs-body-font-family: 'Pretendard', -apple-system, 'Malgun Gothic', sans-serif;
+  --bs-body-bg: #f8f9fa;
+}
+
+body { font-size: 15px; }
+.bg-brand { background: var(--brand) !important; }
+.text-brand { color: var(--brand) !important; }
+.btn-brand { --bs-btn-bg: var(--brand); --bs-btn-border-color: var(--brand); --bs-btn-hover-bg: var(--brand-dark); --bs-btn-hover-border-color: var(--brand-dark); --bs-btn-color: #fff; --bs-btn-hover-color: #fff; --bs-btn-active-bg: var(--brand-dark); }
+.demo-banner { background: #fff3cd; color: #664d03; }
+.min-w-0 { min-width: 0; }
+
+.hero { background: linear-gradient(135deg, var(--brand) 0%, #8a63d2 100%); color: #fff; border-radius: 1rem; }
+.hero .lead { opacity: .9; }
+
+.section-title { font-weight: 700; display: flex; align-items: center; gap: .5rem; margin: 2rem 0 1rem; }
+.section-title::before { content: ''; width: 5px; height: 1.2em; background: var(--brand); border-radius: 3px; }
+
+.product-card { border: 0; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); transition: transform .15s, box-shadow .15s; }
+.product-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, .12); }
+.product-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: .75rem; background: #f1ebfb; color: var(--brand);
+  display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+.product-thumb.lg { width: 84px; height: 84px; flex-basis: 84px; font-size: 2.4rem; }
+
+.card { border: 0; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+.stat-card .value { font-size: 1.8rem; font-weight: 700; color: var(--brand); }
+.stat-card .label { color: #6c757d; font-size: .85rem; }
+
+.score-bar { height: 1.6rem; font-weight: 700; font-size: .9rem; }
+.score-big { font-size: 3rem; font-weight: 800; line-height: 1; }
+
+.compare-table td, .compare-table th { vertical-align: middle; }
+.compare-table tr.lowest { background: #e8f5ec; }
+.compare-table tr.soldout { color: #adb5bd; }
+
+.advice-card .reason { display: flex; gap: .5rem; }
+.advice-card .reason i { color: var(--brand); }
+.skeleton { background: linear-gradient(90deg, #eee 25%, #f5f5f5 37%, #eee 63%); background-size: 400% 100%; animation: shimmer 1.4s infinite; border-radius: .4rem; height: 1rem; margin-bottom: .6rem; }
+@keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+.chat-box { height: 420px; overflow-y: auto; background: #fff; border-radius: .75rem; padding: 1rem; display: flex; flex-direction: column; gap: .75rem; }
+.chat-msg { max-width: 80%; padding: .6rem .9rem; border-radius: 1rem; white-space: pre-wrap; }
+.chat-msg.user { align-self: flex-end; background: var(--brand); color: #fff; border-bottom-right-radius: .25rem; }
+.chat-msg.ai { align-self: flex-start; background: #f1ebfb; border-bottom-left-radius: .25rem; }
+.suggest-btn { border-radius: 2rem; }
+
+.btn, .form-control, .form-select { min-height: 44px; }
+.btn-sm { min-height: 32px; }
+.plot { width: 100%; min-height: 320px; }
+
+.auth-wrap { max-width: 420px; }

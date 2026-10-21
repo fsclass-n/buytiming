@@ -1,0 +1,8 @@
+{
+  "_comment": "쇼핑몰 이름(DB malls.name)별 CSS 셀렉터. 약관·robots.txt로 수집이 허용된 쇼핑몰만 등록한다. *.example.com 시연 쇼핑몰은 SIMULATE_MALLS=true일 때 모의 가격을 생성한다.",
+  "예시 쇼핑몰": {
+    "price": ".product-price .sale",
+    "shipping": ".delivery-fee",
+    "soldout": ".btn-soldout"
+  }
+}

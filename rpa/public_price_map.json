@@ -1,0 +1,7 @@
+{
+  "_comment": "참가격 상품 코드(good_id) → 서비스 상품 model_no 매핑. _fields는 공공데이터포털 응답 명세의 필드명에 맞게 수정한다.",
+  "_fields": {"good_id": "goodId", "price": "goodPrice", "date": "goodInspectDay", "store": "entpName"},
+  "EXAMPLE-WATER-2L": "W2L12",
+  "EXAMPLE-DETERGENT-3L": "LD3L",
+  "EXAMPLE-TISSUE-30": "TP30"
+}

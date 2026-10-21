@@ -1,0 +1,33 @@
+# Render Blueprint: FastAPI 백엔드(Docker). DB는 TiDB Cloud(MySQL 호환)를 DATABASE_URL로 연결한다.
+# 배포는 GitHub Actions(deploy.yml)가 테스트 통과 후 Deploy Hook으로 트리거한다(autoDeployTrigger: off).
+services:
+  - type: web
+    name: buytiming-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    region: singapore
+    plan: free
+    healthCheckPath: /health
+    autoDeployTrigger: "off"
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL          # 예: mysql+pymysql://USER:PASSWORD@HOST:4000/buytiming
+        sync: false
+      - key: DB_SSL_CA             # TiDB Cloud TLS
+        value: /etc/ssl/certs/ca-certificates.crt
+      - key: JWT_SECRET
+        generateValue: true
+      - key: RPA_API_KEY           # EC2 RPA 스케줄러와 같은 값
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: AI_DAILY_LIMIT
+        value: "20"
+      - key: ALLOWED_ORIGINS       # 예: https://buytiming.netlify.app
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
