@@ -101,4 +101,8 @@ jobs:
           for i in $(seq 1 30); do curl -fsS http://localhost:8000/health && exit 0; sleep 2; done
           docker logs api; exit 1
       - name: Compose 설정 검증
-        run: cp .env.example .env && docker compose config -q
+        # localdb 프로필의 필수 변수는 검증용 임시 값으로 채운다
+        env:
+          MYSQL_PASSWORD: ci-only
+          MYSQL_ROOT_PASSWORD: ci-only
+        run: cp .env.example .env && docker compose config -q && docker compose --profile localdb config -q
