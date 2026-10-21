@@ -128,8 +128,26 @@ docker compose exec api python -m app.seed                                # (선
 
 | 워크플로 | 시점 | 내용 |
 |---|---|---|
-| `ci.yml` | 모든 push·PR | ruff, pytest(SQLite), pytest(MySQL 8 서비스 컨테이너), RPA 테스트, JS 문법·build.sh 검사, Docker 빌드·헬스 체크, compose 검증 |
-| `deploy.yml` | `main` push, 수동 | CI 재사용 → Render Deploy Hook → EC2 SSH(`git pull` + `docker compose up -d --build`) → Netlify zip 배포 |
+| `ci.yml` | `main` 외 브랜치 push, PR | ruff, pytest(SQLite), pytest(MySQL 8 서비스 컨테이너), RPA 테스트, JS 문법·build.sh 검사, Docker 빌드·헬스 체크, compose 검증 |
+| `deploy.yml` | `main` push, 수동 | CI 재사용(중복 실행 없음) → **바뀐 폴더에 해당하는 대상만** Render · EC2 · Netlify 배포 |
+
+바뀐 폴더별 배포 대상 (`.github/scripts/detect-changes.sh`):
+
+| 바뀐 경로 | Netlify | Render | EC2 (full) | EC2 (rpa-only) |
+|---|:---:|:---:|:---:|:---:|
+| `frontend/` | ✅ | – | ✅ (git pull로 반영) | – |
+| `netlify.toml` | ✅ | – | – | – |
+| `backend/` | – | ✅ | ✅ (api만 재빌드) | – |
+| `render.yaml` | – | ✅ | – | – |
+| `rpa/` | – | – | ✅ (rpa만 재빌드) | ✅ |
+| `docker-compose.yml` | – | – | ✅ (전체) | ✅ |
+| `deploy/` | – | – | ✅ (nginx 재시작) | – |
+| 그 외(README, 워크플로 등) | – | – | – | – |
+
+- **EC2 (full)**: EC2에서 nginx + api + rpa 전체 운영(기본). **EC2 (rpa-only)**: API는 Render, EC2는 수집기만 운영 → Variable `EC2_MODE=rpa-only`.
+- `backend/`와 `rpa/`가 함께 바뀌면 Render(API)를 먼저 배포한 뒤 EC2(RPA)를 배포합니다.
+- 비교 기준 커밋이 없는 첫 push·강제 push는 모든 대상에 배포하고, 수동 실행(Actions → Deploy → Run workflow)은 선택한 대상에 전체 배포합니다.
+- Netlify Git 연동을 쓰는 경우 Netlify 자체도 `frontend/`(base) 변경이 없으면 빌드를 건너뜁니다. Git 연동과 Actions 배포 중 하나만 사용하세요.
 
 등록할 값 (Settings → Secrets and variables → Actions):
 
@@ -140,6 +158,7 @@ docker compose exec api python -m app.seed                                # (선
 | Secret | `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID` | (선택) Git 연동 대신 Actions로 Netlify 배포 |
 | Variable | `RENDER_HEALTH_URL` | 예: `https://buytiming-api.onrender.com/health` |
 | Variable | `EC2_APP_DIR` | 기본 `~/buytiming` |
+| Variable | `EC2_MODE` | `full`(기본) 또는 `rpa-only` |
 | Variable | `API_BASE_URL` | Netlify 프런트엔드가 호출할 API 주소 |
 
 등록하지 않은 대상은 자동으로 건너뜁니다.
