@@ -15,7 +15,7 @@
 | Backend | Python 3.11.9, FastAPI, SQLAlchemy 2, PyMySQL, PyJWT, bcrypt | `backend/` |
 | AI / ML | Google Gemini(`gemini-2.5-flash`), scikit-learn RandomForest, pandas, NumPy | `backend/app/ai`, `backend/app/ml` |
 | RPA | Requests, BeautifulSoup4, pandas, 내장 스케줄러 | `rpa/` |
-| DB | TiDB Cloud(운영), MySQL 8(개발·CI), SQLite(빠른 로컬 실행·테스트) | — |
+| DB | TiDB Cloud(로컬·Render·EC2 공용), SQLite(자동 테스트), MySQL 8(CI 호환성 테스트) | — |
 | 배포 | Netlify, Render(Docker), AWS EC2(docker compose + nginx) | `netlify.toml`, `render.yaml`, `docker-compose.yml`, `deploy/` |
 | CI/CD | GitHub Actions | `.github/` |
 
@@ -53,7 +53,7 @@ buytiming/
 │   ├── tests/                # pytest 7건
 │   └── Dockerfile
 ├── deploy/                   # nginx.conf, config.same-origin.js, ec2-setup.sh
-├── docker-compose.yml        # EC2: web(nginx) + api + rpa [+ mysql(localdb 프로필)]
+├── docker-compose.yml        # EC2: web(nginx) + api + rpa (DB는 TiDB)
 ├── render.yaml               # Render Blueprint (서비스 이름 buytiming, Dockerfile.render)
 ├── .dockerignore             # 저장소 루트 컨텍스트 빌드(Render)에 backend/app·frontend만 포함
 ├── netlify.toml              # Netlify (base=frontend, 데모 모드)
@@ -91,13 +91,15 @@ Netlify(buytiming.netlify.app): 데모 모드 — 브라우저 목업 데이터�
 
 ## 5. 환경별 차이 한눈에 보기
 
-| 항목 | 로컬 개발 | Netlify | Render | EC2 |
+| 항목 | 로컬 PC | Netlify | Render | EC2 |
 |---|---|---|---|---|
-| DB | SQLite 또는 MySQL 8 | 없음 | TiDB | TiDB |
-| 프런트엔드 제공 | `python -m http.server` | Netlify CDN | **FastAPI(StaticFiles)** | nginx |
-| API 주소(프런트) | 데모 모드 또는 `http://localhost:8000` | 없음(데모 모드) | 같은 도메인(`/`) | 같은 도메인(`/`) |
-| Docker 이미지 | — | — | `backend/Dockerfile.render` (컨텍스트: 저장소 루트) | `backend/Dockerfile`, `rpa/Dockerfile` |
+| 주소 | http://localhost:8000 | buytiming.netlify.app | buytiming.onrender.com | buytiming.duckdns.org |
+| DB | **TiDB** | 없음 | **TiDB** | **TiDB** (세 곳 같은 DB) |
+| 프런트엔드 제공 | FastAPI(StaticFiles, 저장소 `frontend/` 자동) | Netlify CDN | FastAPI(StaticFiles) | nginx |
+| API 주소(프런트) | 같은 도메인(`/`) | 없음(데모 모드) | 같은 도메인(`/`) | 같은 도메인(`/`) |
+| 실행 방식 | `uvicorn` | 정적 호스팅 | `backend/Dockerfile.render` (컨텍스트: 저장소 루트) | `backend/Dockerfile`, `rpa/Dockerfile` (compose) |
 | RPA | 수동 실행 | 없음 | GitHub Actions 예약 실행 | 컨테이너 상주 |
-| 설정 값 | 루트 `.env` | 없음 | Render 대시보드 환경 변수 | 서버의 `~/buytiming/.env` |
+| 설정 값 | 루트 `.env` | 없음 | **같은 `.env`** 를 Environment에 붙여 넣기 | **같은 `.env`** 를 `~/buytiming/.env`로 복사 |
+| 배포 | — | Netlify Git 연동 | 커밋 → CI 통과 → Render Auto-Deploy | 커밋 → CI 통과 → GitHub Actions SSH |
 
 다음 문서: [02. 백엔드](02-backend.md)

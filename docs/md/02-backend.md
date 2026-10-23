@@ -17,32 +17,33 @@
 2. `init_db()` → 테이블이 없으면 생성 (`create_all`, 별도 마이그레이션 도구 없음)
 3. CORS 설정(`ALLOWED_ORIGINS`), 라우터 6개를 `/api/v1` 아래에 등록
 4. `GET /health` → DB에 `SELECT 1`을 실행해 성공하면 `{"status":"ok"}` — Render·EC2·CI가 모두 이 경로로 상태를 확인
-5. `FRONTEND_DIR`이 있으면(Render) 프런트엔드 서빙 — API 경로(`/api/v1`, `/health`, `/docs`, `/openapi.json`)가 먼저 처리되고 나머지는 정적 파일
+5. 프런트엔드 폴더가 있으면 함께 서빙 — `FRONTEND_DIR`(Render: `/app/frontend`), 비어 있으면 저장소의 `frontend/`(로컬)를 찾습니다.
+   API 경로(`/api/v1`, `/health`, `/docs`, `/openapi.json`)가 먼저 처리되고 나머지는 정적 파일입니다.
    - `/js/config.js` → `API_BASE_URL: "/"`(같은 도메인)를 동적으로 응답 (저장소의 데모용 config.js 대신)
    - 없는 경로는 `404.html`, 보안 헤더(`X-Frame-Options`, `nosniff`, `Referrer-Policy`)를 추가
-   - `FRONTEND_DIR`이 없으면(EC2·로컬) `/`는 기존처럼 API 안내 JSON을 돌려줍니다.
+   - 폴더가 없으면(EC2 api 컨테이너 — 화면은 nginx 담당) `/`는 API 안내 JSON을 돌려줍니다.
+6. DB 접속: `DB_SSL_CA`에 값이 있으면 TLS(인증서·호스트 이름 검증). 그 경로의 파일이 없으면(Windows 로컬) certifi 인증서를 사용하므로
+   같은 `.env`를 로컬·EC2·Render에서 그대로 쓸 수 있습니다([`database.py`](../../backend/app/database.py)).
 
 Docker 실행 명령은 `uvicorn app.main:app --port ${PORT:-8000}` 입니다. Render는 `PORT`를 주입하고(기본 10000), EC2는 8000을 씁니다.
 
 ## 2. 환경 변수
 
 [`config.py`](../../backend/app/config.py), [`.env.example`](../../.env.example) 기준입니다.
+**`.env` 하나를 로컬·EC2·Render에서 같은 값으로** 씁니다(Render는 Environment → "Add from .env"로 붙여 넣기).
 
-| 변수 | 기본값 | 설명 | Render | EC2 |
-|---|---|---|---|---|
-| `APP_ENV` | development | `production`이면 비밀값 검사 | production | production |
-| `DATABASE_URL` | sqlite:///./buytiming.db | DB 접속 문자열 | TiDB | TiDB (같은 값) |
-| `DB_SSL_CA` | (없음) | TLS CA 파일 경로 (TiDB 필수) | `/etc/ssl/certs/ca-certificates.crt` | 같음 |
-| `JWT_SECRET` | change-me | 로그인 토큰 서명 키 | 자동 생성 | 직접 생성 |
-| `JWT_EXPIRE_MINUTES` | 60 | 토큰 유효 시간(분) | — | — |
-| `RPA_API_KEY` | change-me-rpa | RPA 전용 API 인증 키 | GitHub Secret `RENDER_RPA_API_KEY`와 같은 값 | rpa와 api가 **반드시 같은 값** (Render와 달라도 됨) |
-| `ADMIN_EMAILS` | (없음) | 이 이메일로 가입하면 관리자 | 선택 | 선택 |
-| `GEMINI_API_KEY` | (없음) | 비우면 규칙 기반 템플릿 문장으로 동작 | 선택 | 선택 |
-| `GEMINI_MODEL` | gemini-2.5-flash | | | |
-| `AI_DAILY_LIMIT` | 20 | 사용자별 일일 Gemini 호출 한도 | | |
-| `ALLOWED_ORIGINS` | * | CORS 허용 출처(쉼표 구분). 두 서버 모두 같은 도메인 호출이라 자기 주소만 허용 | `https://buytiming.onrender.com` | `http://buytiming.duckdns.org` |
-| `TZ` | Asia/Seoul | 서비스 기준 시간대 | Dockerfile에 설정됨 | |
-| `FRONTEND_DIR` | (없음) | 지정하면 프런트엔드 정적 파일도 서빙 | `Dockerfile.render`에 `/app/frontend`로 설정됨 | 설정하지 않음 (nginx 담당) |
+| 변수 | 코드 기본값 | `.env` 값 (세 환경 공용) | 설명 |
+|---|---|---|---|
+| `APP_ENV` | development | `production` | `production`이면 `JWT_SECRET`·`RPA_API_KEY`가 비어 있을 때 기동 거부 |
+| `DATABASE_URL` | sqlite:///./buytiming.db | TiDB 접속 문자열 | DB (로컬 포함 모두 TiDB) |
+| `DB_SSL_CA` | (없음) | `/etc/ssl/certs/ca-certificates.crt` | 값이 있으면 TLS. 파일이 없는 Windows 로컬은 certifi 사용 |
+| `JWT_SECRET` | change-me | 생성한 무작위 값 | 로그인 토큰 서명 키 |
+| `RPA_API_KEY` | change-me-rpa | 생성한 무작위 값 | RPA 전용 API 인증 키. GitHub Secret `RENDER_RPA_API_KEY`에도 같은 값 |
+| `ALLOWED_ORIGINS` | * | `https://buytiming.onrender.com,http://buytiming.duckdns.org,http://localhost:8000` | CORS 허용 출처. 세 환경 모두 같은 도메인 호출이라 공용 값 |
+| `ADMIN_EMAILS` | (없음) | 선택 | 이 이메일로 가입하면 관리자 |
+| `GEMINI_API_KEY` | (없음) | 선택 | 비우면 규칙 기반 템플릿 문장으로 동작 |
+| `GEMINI_MODEL`, `AI_DAILY_LIMIT`, `JWT_EXPIRE_MINUTES`, `TZ` | gemini-2.5-flash, 20, 60, Asia/Seoul | 넣지 않음 | 기본값 사용 |
+| `FRONTEND_DIR` | (없음 → 저장소 `frontend/` 자동 탐색) | **넣지 않음** | Render는 `Dockerfile.render`에 `/app/frontend`로 설정됨. Render 환경 변수에 넣으면 이 값을 덮어씀 |
 
 ## 3. DB 테이블 12개
 
@@ -101,7 +102,7 @@ Docker 실행 명령은 `uvicorn app.main:app --port ${PORT:-8000}` 입니다. R
 
 ## 7. 테스트
 
-- `cd backend && pytest -q` → 29건(프런트엔드 서빙 포함, `FRONTEND_DIR`을 켠 상태로 실행). 기본은 임시 SQLite, `TEST_DATABASE_URL`을 주면 그 DB로 실행(CI는 MySQL 8).
+- `cd backend && pytest -q` → 33건(프런트엔드 서빙·DB TLS 옵션 포함). `.env`의 TiDB 값을 쓰지 않고 임시 SQLite로 실행하며, `TEST_DATABASE_URL`을 주면 그 DB로 실행(CI는 MySQL 8).
 - 테스트는 시작할 때 `seed(reset=True)`로 **DB를 비웁니다**. `TEST_DATABASE_URL`에 TiDB 운영 주소를 넣지 않습니다.
 
 다음 문서: [03. 프런트엔드](03-frontend.md)

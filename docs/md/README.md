@@ -8,11 +8,14 @@
 | 구분 | 주소 | 역할 | 상태 |
 |---|---|---|---|
 | Netlify | https://buytiming.netlify.app | **프런트엔드 전용 — 데모 모드**(서버 없이 브라우저 목업 데이터) | 배포 완료, 추가 작업 없음 |
-| Render | https://buytiming.onrender.com | **단독 풀스택**: FastAPI가 API + 프런트엔드를 같은 도메인으로 제공 (Docker, 무료 플랜) | 배포 예정 |
-| AWS EC2 | http://buytiming.duckdns.org | **단독 풀스택**: nginx(프런트엔드) + FastAPI + RPA 수집기 (docker compose) | 배포 예정 |
-| TiDB Cloud | (TiDB 접속 주소) | **운영 DB — Render와 EC2가 같은 DB를 공유** | DB 생성 완료 |
-| MySQL 8 | 로컬 PC / GitHub Actions CI | **개발·테스트 전용 DB** | CI에 이미 구성됨 |
+| 로컬 PC | http://localhost:8000 | FastAPI가 API + 프런트엔드 제공 (`uvicorn`) | `.env` 작성 예정 |
+| Render | https://buytiming.onrender.com | **단독 풀스택**: FastAPI가 API + 프런트엔드를 같은 도메인으로 제공 (Docker, 무료 플랜). 커밋 → CI 통과 → 자동 배포 | 일부 설정됨 |
+| AWS EC2 | http://buytiming.duckdns.org | **단독 풀스택**: nginx(프런트엔드) + FastAPI + RPA 수집기 (docker compose) | 도메인만 준비됨 |
+| TiDB Cloud | (TiDB 접속 주소) | **유일한 DB — 로컬·Render·EC2가 같은 DB를 공유** | DB 생성 완료 |
+| MySQL 8 | GitHub Actions CI | MySQL 호환성 자동 테스트 전용 | CI에 이미 구성됨 |
 | GitHub Actions | — | CI/CD + **Render용 가격 수집(매시 예약 실행)** | 값 등록 예정 |
+
+**설정 파일은 `.env` 하나**: 로컬에서 작성 → EC2로 `scp` 복사 → Render는 Environment → "Add from .env"로 같은 내용을 붙여 넣기.
 
 ```
  사용자 ──▶ Netlify  (frontend only, 데모 모드 — API 호출 없음)
@@ -48,7 +51,7 @@
 
 | 번호 | 문서 | 할 일 |
 |---|---|---|
-| 06 | [DB 준비: TiDB(운영) · MySQL 8(개발)](06-database.md) | TiDB 접속 문자열, 로컬 MySQL 8 |
+| 06 | [DB 준비: TiDB 공용 · `.env` 작성](06-database.md) | TiDB 접속 문자열, 로컬 `.env`, 시드 데이터 |
 | 07 | [Render 배포 (단독 풀스택)](07-deploy-render.md) | 서비스 설정·환경 변수·자동 배포 끄기·확인 |
 | 08 | [EC2 배포 (단독 풀스택, DuckDNS)](08-deploy-ec2.md) | 인스턴스·고정 IP·DuckDNS·Docker·`.env`·시드 |
 | 09 | [Netlify (데모 모드 유지)](09-netlify-connect.md) | 확인만 — 추가 작업 없음 |
@@ -57,12 +60,11 @@
 
 ## 이 프로젝트에서 특히 주의할 점 (요약)
 
-1. **`main`에 push하면 운영 배포**가 일어납니다. 바뀐 폴더에 해당하는 대상만 배포됩니다(05 참고). `frontend/`를 바꾸면 Render와 EC2가 함께 배포됩니다.
-2. **운영 DB는 하나(TiDB)** 입니다. 테스트(`pytest`)나 `python -m app.seed --reset`을 TiDB 주소로 실행하면 **운영 데이터가 모두 지워집니다**.
-3. `.env`는 **로컬 PC와 EC2만** 읽습니다. Render는 대시보드 Environment, GitHub Actions는 Secrets/Variables를 씁니다.
-   [`.env.example`](../../.env.example) 맨 위 **[필수] 6개**가 Render 환경 변수와 같은 이름이며, EC2에서는 이 6개만 운영 값으로 바꾸면 됩니다.
-   - `RPA_TARGET_API`는 EC2 `.env`에 넣지 않습니다(`http://localhost:8000`을 넣으면 수집기가 API를 찾지 못함).
-   - `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`는 예시 값을 그대로 둡니다(비어 있으면 `docker compose up` 자체가 실패).
-4. Render 무료 플랜은 **셸(Shell) 접속이 안 됩니다**. 시드 데이터는 EC2나 로컬 PC에서 TiDB로 넣습니다.
+1. **`main`에 push하면 운영 배포**가 일어납니다. CI가 통과하면 Render는 Auto-Deploy(After CI Checks Pass)로, EC2는 GitHub Actions로 배포됩니다(05·07 참고).
+2. **로컬 포함 모든 환경이 같은 TiDB**를 씁니다. 로컬에서 바꾼 데이터가 곧 운영 데이터입니다.
+   `python -m app.seed --reset`, `TEST_DATABASE_URL=<TiDB>` 테스트는 **운영 데이터를 모두 지웁니다**(일반 `pytest`는 임시 SQLite라 안전).
+3. **`.env` 하나를 세 환경에서 공용**으로 씁니다([`.env.example`](../../.env.example)). 로컬 작성 → EC2로 `scp` → Render에 "Add from .env"로 붙여 넣기.
+   값을 바꾸면 세 곳 모두 다시 반영합니다. `FRONTEND_DIR`, `RPA_TARGET_API`는 `.env`에 넣지 않습니다.
+4. Render 무료 플랜은 **셸(Shell) 접속이 안 됩니다**. 시드 데이터는 로컬 PC에서 TiDB로 넣습니다(06 문서).
 5. GitHub Actions가 EC2에 SSH로 접속하므로 **보안 그룹 22번 포트를 GitHub 러너가 접근할 수 있게** 열어야 합니다(10 참고).
 6. 공개 저장소의 예약 워크플로는 **저장소에 60일간 활동이 없으면 GitHub가 자동으로 멈춥니다**. 멈추면 Actions 화면에서 다시 켭니다.

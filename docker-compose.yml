@@ -1,10 +1,9 @@
-# EC2(또는 로컬)용 전체 스택: nginx(프런트엔드 + /api 프록시) + FastAPI + RPA 스케줄러 [+ MySQL]
+# EC2(또는 로컬)용 전체 스택: nginx(프런트엔드 + /api 프록시) + FastAPI + RPA 스케줄러. DB는 TiDB(Render·로컬과 공유)
 #
-#   운영(EC2, TiDB 사용):   docker compose up -d --build
-#   로컬 MySQL 포함:        docker compose --profile localdb up -d --build
-#   시드(최초 1회):         docker compose exec api python -m app.seed
+#   실행:            docker compose up -d --build
+#   시드(최초 1회):  docker compose exec api python -m app.seed
 #
-# 값은 저장소 루트의 .env 파일에서 읽는다(.env.example 참고).
+# 값은 저장소 루트의 .env 파일에서 읽는다(.env.example 참고). 같은 .env를 로컬 PC와 Render(환경 변수 붙여 넣기)에도 쓴다.
 services:
   api:
     build: ./backend
@@ -27,7 +26,7 @@ services:
     image: buytiming-rpa:latest
     env_file: .env
     environment:
-      # 기본: 같은 EC2의 api 컨테이너. Render API를 대상으로 하려면 .env에 RPA_TARGET_API=https://<서비스>.onrender.com
+      # 기본: 같은 EC2의 api 컨테이너(.env에 RPA_TARGET_API를 넣지 않음)
       RPA_TARGET_API: ${RPA_TARGET_API:-http://api:8000}
     volumes:
       - ./reports:/app/reports
@@ -47,24 +46,3 @@ services:
     depends_on:
       - api
     restart: unless-stopped
-
-  mysql:
-    profiles: ["localdb"]
-    image: mysql:8.0
-    environment:
-      MYSQL_DATABASE: buytiming
-      MYSQL_USER: buytiming
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD를 .env에 설정하세요}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD를 .env에 설정하세요}
-      TZ: Asia/Seoul
-    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
-    volumes:
-      - mysql-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      retries: 10
-    restart: unless-stopped
-
-volumes:
-  mysql-data:

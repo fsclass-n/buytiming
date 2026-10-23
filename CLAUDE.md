@@ -9,7 +9,8 @@ RPA가 쇼핑몰·공공 가격을 1시간마다 수집 → FastAPI 백엔드가
 Final-Project 3조 팀 저장소이며 `main`에 push하면 **실제 운영 환경(Netlify · Render · AWS EC2)에 자동 배포**된다.
 
 운영 구성: **Netlify = 프런트엔드 데모 모드(API 연결 없음)**, **Render·EC2 = 각각 독립된 풀스택**(서로 호출하지 않음),
-**DB = TiDB 하나를 Render·EC2가 공유**, MySQL 8은 개발·CI 전용. Render 가격 수집은 GitHub Actions(`collect-render.yml`), EC2는 rpa 컨테이너.
+**DB = TiDB 하나를 로컬·Render·EC2가 공유**(MySQL 8은 CI 호환성 테스트 전용), **설정 = `.env` 하나**(로컬 작성 → EC2 `scp` → Render "Add from .env").
+Render 배포는 Auto-Deploy "After CI Checks Pass", EC2 배포는 `deploy.yml`. Render 가격 수집은 GitHub Actions(`collect-render.yml`), EC2는 rpa 컨테이너.
 
 ## 2. 폴더와 배포 대상
 
@@ -20,7 +21,7 @@ Final-Project 3조 팀 저장소이며 `main`에 push하면 **실제 운영 환�
 | `backend/` | Python 3.11 · FastAPI · SQLAlchemy. `Dockerfile`(EC2·CI용 API), `Dockerfile.render`(Render용 API+프런트) | Render, EC2(api) |
 | `render.yaml`, `.dockerignore`(루트) | Render Blueprint, Render 빌드 컨텍스트(저장소 루트) 필터 | Render |
 | `rpa/` | 가격 수집기(Requests · BeautifulSoup), Docker | EC2(rpa) |
-| `docker-compose.yml` | EC2 전체 스택(web + api + rpa [+ mysql]) | EC2 전체 재빌드 |
+| `docker-compose.yml` | EC2 전체 스택(web + api + rpa, DB는 TiDB) | EC2 전체 재빌드 |
 | `deploy/` | nginx.conf, EC2 설정 스크립트 | EC2(nginx 재시작) |
 | `.github/` | CI(`ci.yml`), 배포(`deploy.yml`, `scripts/detect-changes.sh`), Render 수집(`collect-render.yml`) | 배포 없음(파이프라인 자체 변경) |
 | `.claude/`, `CLAUDE.md`, `README.md`, `docs/` | Claude 설정·문서 (배포 절차는 `docs/md/README.md`) | **배포 없음** |
@@ -33,12 +34,11 @@ pip install -r backend/requirements-dev.txt -r rpa/requirements-dev.txt
 
 # 테스트·린트 — 작업 완료 전에 바뀐 영역은 반드시 실행
 ruff check backend rpa
-cd backend && pytest -q        # SQLite
+cd backend && pytest -q        # 임시 SQLite (.env의 TiDB를 쓰지 않음)
 cd rpa && pytest -q
 
-# 로컬 실행
-cd backend && python -m app.seed && uvicorn app.main:app --reload   # http://localhost:8000/docs
-cd frontend && python -m http.server 5501                           # 데모 모드
+# 로컬 실행 — .env가 운영 TiDB를 가리킨다(로컬에서 바꾼 데이터 = 운영 데이터)
+cd backend && uvicorn app.main:app --reload                         # http://localhost:8000 (화면 + API)
 
 # 배포 대상 미리보기 (바뀐 파일 → 어떤 배포가 일어나는지)
 CHANGED_FILES="backend/app/main.py" EVENT=push bash .github/scripts/detect-changes.sh
@@ -51,16 +51,18 @@ CHANGED_FILES="backend/app/main.py" EVENT=push bash .github/scripts/detect-chang
 2. **배포 설정 파일은 확인 후 수정**: `netlify.toml`, `render.yaml`, `docker-compose.yml`, `deploy/**`, `.github/**`,
    `backend/Dockerfile`, `rpa/Dockerfile`, `requirements*.txt`, `.dockerignore`는 수정 전에 이유와 영향을 설명하고 승인을 받는다.
 3. **헬스 체크 유지**: `GET /health`는 Render·EC2·CI가 모두 사용한다. 경로·응답을 바꾸지 않는다.
-4. **비밀값**: `.env`·API 키·DB 접속 문자열을 커밋하거나 출력하지 않는다. 새 환경 변수가 필요하면 `.env.example`과 `render.yaml`(`sync: false`)에 키만 추가한다.
+4. **비밀값**: `.env`·API 키·DB 접속 문자열을 커밋하거나 출력하지 않는다. 새 환경 변수가 필요하면 `.env.example`과 `render.yaml`(`sync: false`)에 키만 추가하고,
+   세 환경(로컬·EC2·Render)에서 같은 값으로 동작하게 만든다(환경별로 달라야 하는 값은 코드 기본값으로 처리).
    Gemini 키는 서버(backend)에만 둔다. 브라우저 코드에서 Gemini를 직접 호출하지 않는다.
 5. **`frontend/js/config.js`**: Netlify 빌드 때 `build.sh`가 다시 생성한다. 커밋되는 버전은 `API_BASE_URL: ""`(데모 모드)를 유지한다.
    로컬에서 `build.sh`를 실행해 바뀐 config.js는 커밋하지 않는다. Render(FastAPI)와 EC2(nginx)는 `/js/config.js`를 같은 도메인 설정(`"/"`)으로 바꿔 응답한다.
    Netlify에 `API_BASE_URL`을 등록하지 않는다(데모 모드 유지 결정).
 6. **프런트엔드 빌드 체계 유지**: npm·번들러·React 등을 도입하지 않는다(Netlify는 `sh build.sh`만 실행, CI는 `node --check`로 문법만 검사).
    새 JS 파일은 `frontend/js/` 또는 `frontend/js/pages/`에 ES Module로 둔다.
-7. **DB 호환성**: 운영은 TiDB(MySQL 호환), 개발은 MySQL 8 / SQLite, CI는 SQLite와 MySQL 8 둘 다 테스트한다.
+7. **DB 호환성**: 로컬·Render·EC2 모두 TiDB(MySQL 호환), CI는 SQLite와 MySQL 8 둘 다 테스트한다.
    한쪽 DB에서만 동작하는 SQL·타입(PostgreSQL 전용 문법 등)을 쓰지 않는다.
-8. **데이터 삭제 금지**: `python -m app.seed --reset`은 DB 전체를 지운다. 개발 DB에서 사용자가 요청할 때만 실행한다.
+8. **데이터 삭제 금지**: 로컬도 운영 TiDB를 쓴다. `python -m app.seed --reset`, `TEST_DATABASE_URL=<TiDB>` 테스트는 운영 데이터를 지우므로 실행하지 않는다.
+   DB 구조를 바꾸는 실험은 사용자 승인 후 별도 DB(예: `buytiming_dev`)에서 한다.
 9. **RPA 수집 원칙**: robots.txt 확인, 요청 간격(기본 3초) 유지, `rpa/malls.json`에 등록된(약관상 허용된) 쇼핑몰만 수집한다.
 10. **Render 무료 플랜**: 콜드 스타트와 메모리 제한이 있다. 무거운 의존성·상주 작업을 API 컨테이너에 추가하지 않는다.
 

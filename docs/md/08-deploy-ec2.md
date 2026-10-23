@@ -8,7 +8,6 @@ Render를 호출하지 않으며, DB만 **TiDB**(Render와 공유)를 씁니다.
 | `web` (nginx:1.27-alpine) | 80번 포트. `frontend/` 정적 파일 + `/api`, `/docs`, `/health`를 `api`로 프록시 |
 | `api` (backend 이미지) | FastAPI, TiDB 접속 |
 | `rpa` (rpa 이미지) | 스케줄러 — 매시 수집 등, `http://api:8000` 호출 |
-| `mysql` | `localdb` 프로필 전용 — **이번 구성에서는 사용하지 않음** |
 
 ## 1. EC2 인스턴스 만들기
 
@@ -59,29 +58,23 @@ exit
 bash ~/buytiming/deploy/ec2-setup.sh https://github.com/fsclass-n/buytiming.git
 ```
 
-## 6. `~/buytiming/.env` 작성 (가장 중요)
+## 6. `.env` — 로컬 PC의 `.env`를 그대로 복사 (가장 중요)
 
-`ec2-setup.sh`가 [`.env.example`](../../.env.example)을 `.env`로 복사해 둡니다. 맨 위 **[필수] 6개만** 운영 값으로 바꾸면 됩니다.
+로컬·Render와 **같은 `.env`** 를 씁니다. 값을 서버에서 다시 입력하지 않고, PC의 파일을 그대로 올립니다.
 
+PC(PowerShell, 저장소 폴더)에서:
+```powershell
+scp -i <키.pem 경로> .env ubuntu@buytiming.duckdns.org:~/buytiming/.env
+```
+EC2에서:
 ```bash
-nano ~/buytiming/.env
 chmod 600 ~/buytiming/.env
+grep -c . ~/buytiming/.env          # 줄 수 확인(빈 파일이 아닌지)
 ```
 
-| 항목 | EC2 값 | 비고 |
-|---|---|---|
-| `APP_ENV` | `production` | |
-| `DATABASE_URL` | `mysql+pymysql://<TiDB USER>:<URL 인코딩한 비밀번호>@<TiDB HOST>:4000/buytiming?charset=utf8mb4` | Render와 **같은 값**(같은 TiDB 공유) |
-| `DB_SSL_CA` | `/etc/ssl/certs/ca-certificates.crt` | Render와 같은 값 |
-| `JWT_SECRET` | 무작위 긴 문자열 | EC2 전용 값. Render와 **달라도 됨** |
-| `RPA_API_KEY` | 무작위 긴 문자열 | EC2 전용 값. 같은 `.env`를 api·rpa가 함께 읽으므로 자동으로 일치 |
-| `ALLOWED_ORIGINS` | `http://buytiming.duckdns.org` | 화면과 API가 같은 도메인이라 자기 주소만 허용 |
-
-- 선택 항목: `GEMINI_API_KEY`, `ADMIN_EMAILS`, `KCA_API_URL`·`DATA_GO_KR_KEY`(참가격), `SEED_DEMO_PASSWORD`·`SEED_ADMIN_PASSWORD`
-- 그대로 둘 것
-  - `RPA_TARGET_API` — 예시 파일에서 주석 처리되어 있어 compose 기본값 `http://api:8000`이 쓰입니다. `http://localhost:8000`을 적으면 수집기가 API를 찾지 못합니다.
-  - `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` — TiDB를 쓰므로 사용되지 않지만, compose는 프로필과 관계없이 파일 전체의 `${VAR:?}`를 검사해 비어 있으면 `docker compose up` 자체가 오류이므로 예시 값을 남겨 둡니다.
-
+- `ec2-setup.sh` 2회차가 만든 예시 `.env`는 이 복사로 덮어씁니다.
+- `.env` 값을 바꾸면 PC에서 다시 `scp` → EC2에서 `docker compose up -d`(변경된 값으로 컨테이너 재생성), Render에도 다시 붙여 넣습니다(07 문서).
+- `RPA_TARGET_API`, `FRONTEND_DIR`은 `.env`에 넣지 않습니다. EC2 수집기는 compose 기본값 `http://api:8000`, 화면은 nginx가 담당합니다.
 - 값에 `$`가 들어 있으면 compose가 변수로 해석합니다. 그런 값은 작은따옴표로 감쌉니다(`JWT_SECRET='ab$cd'`).
 
 ## 7. 기동
@@ -98,11 +91,13 @@ PC 브라우저: http://buytiming.duckdns.org (프런트엔드), http://buytimin
 
 ## 8. 시드 데이터 (TiDB에 아직 데이터가 없을 때 1회)
 
+보통은 06 문서 4단계에서 로컬 PC로 이미 넣었으므로 생략합니다. EC2에서 넣어야 한다면:
+
 ```bash
-docker compose exec -e SEED_DEMO_PASSWORD='<데모 비번>' -e SEED_ADMIN_PASSWORD='<관리자 비번>' api python -m app.seed
+docker compose exec api python -m app.seed      # .env의 SEED_* 값 사용, 데이터가 있으면 자동으로 건너뜀
 ```
 
-TiDB를 Render와 공유하므로 여기서 한 번 넣으면 Render API에서도 보입니다.
+TiDB를 로컬·Render와 공유하므로 한 번만 넣으면 모든 환경에서 보입니다.
 
 ## 9. RPA 동작 확인
 

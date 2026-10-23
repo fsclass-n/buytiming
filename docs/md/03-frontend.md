@@ -40,7 +40,8 @@ window.APP_CONFIG = { API_BASE_URL: "" };
 - **Netlify**: [`netlify.toml`](../../netlify.toml) → `base = "frontend"`, `command = "sh build.sh"`.
   [`build.sh`](../../frontend/build.sh)가 Netlify 환경 변수 `API_BASE_URL` 값으로 `js/config.js`를 빌드할 때마다 새로 만듭니다.
   이 변수를 **등록하지 않으므로** 빈 값 → 데모 모드입니다.
-- **Render**: FastAPI가 `/js/config.js` 요청에 `API_BASE_URL: "/"`를 직접 응답합니다([`main.py`](../../backend/app/main.py), `FRONTEND_DIR` 설정 시).
+- **Render·로컬**: FastAPI가 `/js/config.js` 요청에 `API_BASE_URL: "/"`를 직접 응답합니다([`main.py`](../../backend/app/main.py)).
+  Render는 Dockerfile의 `FRONTEND_DIR=/app/frontend`, 로컬은 저장소의 `frontend/`를 자동으로 찾아 서빙합니다(http://localhost:8000).
 - **EC2**: nginx가 `/js/config.js` 요청을 [`deploy/config.same-origin.js`](../../deploy/config.same-origin.js)(`API_BASE_URL: "/"`)로 바꿔서 응답합니다([`deploy/nginx.conf`](../../deploy/nginx.conf)).
 - **저장소에 커밋되는 config.js**는 항상 `API_BASE_URL: ""`(데모 모드)로 유지합니다. 로컬에서 `build.sh`를 실행해 바뀐 파일은 커밋하지 않습니다.
 

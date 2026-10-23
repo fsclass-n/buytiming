@@ -2,22 +2,23 @@
 
 ## 1. 단계별 완료 점검표
 
-### DB (06)
-- [ ] TiDB Starter 인스턴스 생성, `buytiming` DB 생성
-- [ ] 접속 문자열 확보(비밀번호 URL 인코딩), 허용 IP(EC2, Render, 개발 PC) 설정
-- [ ] 시드 데이터 1회 입력(EC2 또는 PC), 데모·관리자 비밀번호 보관
+### DB · `.env` (06)
+- [ ] TiDB Starter 인스턴스 생성, `buytiming` DB 생성, 허용 IP(개발 PC, EC2, Render) 설정
+- [ ] 로컬 `.env` 작성: `copy .env.example .env` → `DATABASE_URL`(TiDB), `JWT_SECRET`, `RPA_API_KEY` 채움 (나머지 필수 값은 예시 그대로)
+- [ ] 로컬에서 `python -m app.seed` 1회, 데모·관리자 비밀번호 보관
+- [ ] 로컬 `uvicorn app.main:app --reload` → http://localhost:8000 화면·로그인 동작
 
 ### Render — 단독 풀스택 (07)
 - [ ] 서비스 이름 `buytiming`, Docker, Singapore, Free, Health Check `/health`
 - [ ] Dockerfile Path `./backend/Dockerfile.render`, Build Context `.`
-- [ ] 필수 환경 변수 6개 (`APP_ENV`, `DATABASE_URL`, `DB_SSL_CA`, `JWT_SECRET`, `RPA_API_KEY`, `ALLOWED_ORIGINS=https://buytiming.onrender.com`)
-- [ ] Auto-Deploy **Off**
+- [ ] Environment → **Add from .env**로 로컬 `.env` 붙여 넣기 (`FRONTEND_DIR`은 넣지 않음)
+- [ ] Auto-Deploy **After CI Checks Pass**, Build Filters Included Paths `backend/**`, `frontend/**`, `render.yaml`, `.dockerignore`
 - [ ] `/health` → `"status":"ok"`, `/` → 홈 화면, `/js/config.js` → `API_BASE_URL: "/"`
 
 ### EC2 — 단독 풀스택 (08)
 - [ ] Elastic IP 연결, DuckDNS가 Elastic IP를 가리킴
 - [ ] 보안 그룹 80 개방, 22번은 GitHub Actions 접속 가능하게(10)
-- [ ] `.env` [필수] 6개: `APP_ENV=production`, TiDB `DATABASE_URL`·`DB_SSL_CA`, `JWT_SECRET`, `RPA_API_KEY`, `ALLOWED_ORIGINS=http://buytiming.duckdns.org` / `RPA_TARGET_API` 없음, `MYSQL_*` 예시 값 유지, `chmod 600`
+- [ ] 로컬 `.env`를 `scp`로 `~/buytiming/.env`에 복사, `chmod 600`
 - [ ] `docker compose ps` → api healthy, rpa·web running
 - [ ] http://buytiming.duckdns.org/health → ok, 수동 `collect` 성공
 
@@ -25,8 +26,8 @@
 - [ ] 환경 변수 `API_BASE_URL` 없음, `/js/config.js` → `API_BASE_URL: ""`, 데모 배너 표시
 
 ### GitHub Actions (10)
-- [ ] Secrets: `RENDER_DEPLOY_HOOK_URL`, `RENDER_RPA_API_KEY`, `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`
-- [ ] Variables: `RENDER_HEALTH_URL`, `RENDER_URL` (필요 시 `EC2_APP_DIR`, `EC2_MODE=full`)
+- [ ] Secrets: `RENDER_RPA_API_KEY`(= `.env`의 `RPA_API_KEY`), `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY` — `RENDER_DEPLOY_HOOK_URL`은 등록하지 않음
+- [ ] Variables: `RENDER_URL` (필요 시 `EC2_APP_DIR`, `EC2_MODE=full`)
 - [ ] Git 연동이면 `NETLIFY_*` Secret 미등록
 - [ ] Deploy 워크플로 수동 실행 성공, Collect (Render) 수동 실행 성공
 
@@ -41,7 +42,8 @@
 |---|---|---|
 | Render 기동 실패: `운영 환경에서는 jwt_secret, rpa_api_key 값을 반드시 설정해야 합니다` | Render Logs | 해당 환경 변수가 비었거나 기본값 → 입력 |
 | `(1045, "Access denied for user ...")` | api 로그 | TiDB 사용자 이름(`xxxx.root` 접두어 포함)·비밀번호 확인, 특수문자 URL 인코딩 |
-| `Connections using insecure transport are prohibited` 또는 SSL 오류 | api 로그 | `DB_SSL_CA=/etc/ssl/certs/ca-certificates.crt` 누락 |
+| `Connections using insecure transport are prohibited` 또는 SSL 오류 | api 로그 | `.env`의 `DB_SSL_CA=/etc/ssl/certs/ca-certificates.crt` 누락(값이 비면 TLS를 쓰지 않음) |
+| 로컬에서 `CERTIFICATE_VERIFY_FAILED` | 터미널 | 회사·학원 프록시가 TLS를 가로채는 경우. 다른 네트워크에서 확인하거나 프록시 루트 인증서 파일 경로를 `DB_SSL_CA`에 지정 |
 | `(1049, "Unknown database 'buytiming'")` | api 로그 | TiDB에서 `CREATE DATABASE buytiming;` |
 | `Can't connect to MySQL server ... timed out` | api 로그 | TiDB 허용 IP 목록에 Render/EC2 IP 없음 |
 | `Lost connection to MySQL server during query` (가끔) | api 로그 | TiDB Starter 유휴 연결 정리 — `pool_pre_ping`·`pool_recycle`로 자동 재연결됨. 반복되면 보고 |
@@ -52,9 +54,10 @@
 | Netlify가 실제 데이터를 안 보여 줌 | — | 의도된 동작(데모 모드 유지, 09 문서) |
 | Collect (Render) 실패: `401 INVALID_RPA_KEY` | Actions 로그 | Secret `RENDER_RPA_API_KEY` ≠ Render `RPA_API_KEY` |
 | 수집 결과 `inserted: 0, duplicate: N` | — | 같은 시간대에 다른 수집기(EC2/Actions)가 먼저 저장함. 정상 |
-| `docker compose up`: `required variable MYSQL_PASSWORD is missing a value` | EC2 터미널 | `.env`에 `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` placeholder 입력 |
-| rpa 로그: `Connection refused ... localhost:8000` | `docker compose logs rpa` | `.env`의 `RPA_TARGET_API`를 `http://api:8000`으로 |
-| rpa 로그: `401 ... INVALID_RPA_KEY` | `docker compose logs rpa` | api와 rpa가 읽는 `RPA_API_KEY`가 다름 → `.env` 하나만 쓰므로 값 확인 후 `docker compose up -d` |
+| Render에서 push 후 자동 배포가 안 됨 | Render Events, GitHub 커밋의 검사 결과 | Auto-Deploy = After CI Checks Pass인지, 실패한 검사가 없는지, 바뀐 경로가 Build Filter에 포함되는지 |
+| Render 화면이 사라지고 JSON만 나옴(설정 붙여 넣은 뒤) | Render Environment | `FRONTEND_DIR`이 들어가 있으면 삭제(Dockerfile 값 사용) |
+| rpa 로그: `Connection refused ... localhost:8000` | `docker compose logs rpa` | EC2 `.env`에서 `RPA_TARGET_API` 줄 삭제(compose 기본값 `http://api:8000` 사용) |
+| rpa 로그: `401 ... INVALID_RPA_KEY` | `docker compose logs rpa` | `.env`를 바꾼 뒤 컨테이너를 다시 만들지 않음 → `docker compose up -d` |
 | EC2 빌드 중 멈춤·`Killed` | `free -h`, `dmesg` | 메모리 부족 → 스왑 2 GB(08 문서 4단계) 또는 t3.small |
 | 관리자 메뉴가 안 보임 | — | 시드의 `admin@buytiming.demo`로 로그인하거나, `ADMIN_EMAILS`에 넣은 이메일로 **새로 가입**(기존 계정은 자동 변경 안 됨) |
 | AI 조언이 항상 비슷한 문장 | `/health`의 `"gemini"` | `false`면 키 없음 → 템플릿 문장으로 동작(정상 대체 동작) |
@@ -72,9 +75,9 @@
 
 ## 4. 보안 마무리
 
-- `.env`, `.pem`, Deploy Hook URL, TiDB 비밀번호는 Git·메신저 공개 채널에 올리지 않습니다.
-- 값이 노출되면: TiDB 비밀번호 Reset(Render·EC2 둘 다 갱신), Render Deploy Hook Regenerate, 노출된 쪽 `JWT_SECRET`·`RPA_API_KEY` 교체
-  (Render의 `RPA_API_KEY`를 바꾸면 GitHub Secret `RENDER_RPA_API_KEY`도 같이), EC2 키 페어 교체.
-- 운영 데이터가 들어간 뒤에는 `python -m app.seed --reset`, `pytest`를 TiDB 주소로 실행하지 않습니다.
+- `.env`, `.pem`, TiDB 비밀번호는 Git·메신저 공개 채널에 올리지 않습니다. `.env` 하나가 세 환경 공용이므로 유출 시 영향이 큽니다.
+- 값이 노출되면: 로컬 `.env`에서 TiDB 비밀번호(Reset)·`JWT_SECRET`·`RPA_API_KEY`를 교체 → EC2로 다시 `scp`, Render에 다시 붙여 넣기,
+  GitHub Secret `RENDER_RPA_API_KEY`도 같은 값으로 교체, EC2 키 페어 교체.
+- `python -m app.seed --reset`과 `TEST_DATABASE_URL=<TiDB>` 테스트는 운영 데이터를 지우므로 실행하지 않습니다(일반 `pytest`는 임시 SQLite라 안전).
 
 처음으로: [문서 목록](README.md)

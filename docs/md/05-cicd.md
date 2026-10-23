@@ -52,7 +52,7 @@ CHANGED_FILES="backend/app/main.py" EVENT=push bash .github/scripts/detect-chang
 
 | 대상 | 방식 | 필요한 값 (없으면 그 대상만 건너뜀) |
 |---|---|---|
-| Render | Deploy Hook URL에 POST → 60초 대기 후 헬스 체크(최대 5분) | Secret `RENDER_DEPLOY_HOOK_URL`, Variable `RENDER_HEALTH_URL` |
+| Render | **Render Auto-Deploy "After CI Checks Pass"**: 이 커밋의 GitHub 검사가 모두 통과하면 Render가 직접 배포(Build Filter: `backend/**`, `frontend/**`, `render.yaml`, `.dockerignore`). `deploy.yml`의 Render 작업은 Hook이 없어 건너뜀 | Render 대시보드 설정(07 문서). `RENDER_DEPLOY_HOOK_URL`은 등록하지 않음(Auto-Deploy Off일 때만 사용) |
 | EC2 | SSH 접속 → `git pull --ff-only origin main` → 바뀐 서비스만 `docker compose up -d --build` → `http://localhost/health` 확인 | Secrets `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, Variable `EC2_APP_DIR`(기본 `~/buytiming`) |
 | Netlify | (Actions 방식) `build.sh` → zip을 Netlify API로 업로드 | Secrets `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID` |
 

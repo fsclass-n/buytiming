@@ -1,6 +1,8 @@
 # Render Blueprint: 단독 풀스택(FastAPI + 프런트엔드 정적 파일, Docker). DB는 TiDB Cloud(MySQL 호환)를 DATABASE_URL로 연결한다.
 # 프런트엔드와 API가 같은 도메인(https://buytiming.onrender.com)이며, 가격 수집은 GitHub Actions(collect-render.yml)가 매시 실행한다.
-# 배포는 GitHub Actions(deploy.yml)가 테스트 통과 후 Deploy Hook으로 트리거한다(autoDeployTrigger: off).
+# 배포: main에 커밋하면 GitHub Actions의 CI가 모두 통과한 뒤 Render가 자동 배포한다(After CI Checks Pass).
+#       아래 경로가 바뀐 커밋만 배포하며, 이 경우 Deploy Hook(RENDER_DEPLOY_HOOK_URL)은 등록하지 않는다(중복 배포 방지).
+# 환경 변수 값은 로컬·EC2와 같은 .env를 대시보드 Environment → "Add from .env"로 붙여 넣는다.
 services:
   - type: web
     name: buytiming
@@ -10,7 +12,13 @@ services:
     region: singapore
     plan: free
     healthCheckPath: /health
-    autoDeployTrigger: "off"
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - backend/**
+        - frontend/**
+        - render.yaml
+        - .dockerignore
     envVars:
       - key: APP_ENV
         value: production
@@ -18,8 +26,8 @@ services:
         sync: false
       - key: DB_SSL_CA             # TiDB Cloud TLS
         value: /etc/ssl/certs/ca-certificates.crt
-      - key: JWT_SECRET
-        generateValue: true
+      - key: JWT_SECRET            # 로컬·EC2와 같은 .env 값
+        sync: false
       - key: RPA_API_KEY           # GitHub Secret RENDER_RPA_API_KEY와 같은 값
         sync: false
       - key: GEMINI_API_KEY
@@ -28,7 +36,7 @@ services:
         value: gemini-2.5-flash
       - key: AI_DAILY_LIMIT
         value: "20"
-      - key: ALLOWED_ORIGINS       # 같은 도메인이라 CORS가 필요 없으므로 자기 주소만 허용
-        value: https://buytiming.onrender.com
+      - key: ALLOWED_ORIGINS       # .env와 같은 값(세 환경 주소)
+        value: https://buytiming.onrender.com,http://buytiming.duckdns.org,http://localhost:8000
       - key: ADMIN_EMAILS
         sync: false

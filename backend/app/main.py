@@ -41,8 +41,10 @@ def health():
 
 SECURITY_HEADERS = {"X-Frame-Options": "DENY", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin"}
 
-if settings.frontend_dir and Path(settings.frontend_dir).is_dir():
-    # Render 단독 풀스택: 프런트엔드와 API를 같은 도메인으로 제공 (EC2에서는 nginx가 같은 역할)
+# Render(FRONTEND_DIR=/app/frontend)·로컬(저장소의 frontend/)은 프런트엔드와 API를 같은 도메인으로 제공. EC2 api 컨테이너는 폴더가 없어 API만(nginx가 화면 담당)
+FRONTEND_DIR = Path(settings.frontend_dir or Path(__file__).resolve().parents[2] / "frontend")
+
+if FRONTEND_DIR.is_dir():
     @app.middleware("http")
     async def security_headers(request: Request, call_next):
         response = await call_next(request)
@@ -55,7 +57,7 @@ if settings.frontend_dir and Path(settings.frontend_dir).is_dir():
         return Response('window.APP_CONFIG = { API_BASE_URL: "/" };\n', media_type="application/javascript",
                         headers={"Cache-Control": "no-cache"})
 
-    app.mount("/", StaticFiles(directory=settings.frontend_dir, html=True), name="frontend")
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 else:
     @app.get("/", include_in_schema=False)
     def root():

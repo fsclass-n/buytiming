@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     database_url: str = "sqlite:///./buytiming.db"
-    db_ssl_ca: str | None = None  # TiDB Cloud 등 TLS 필수 DB의 CA 파일 경로
+    db_ssl_ca: str | None = None  # 값이 있으면 TLS 접속(TiDB 필수). 파일이 없는 환경(Windows 로컬)은 certifi/OS 인증서로 검증
 
     jwt_secret: str = "change-me"
     jwt_expire_minutes: int = 60
@@ -25,7 +25,8 @@ class Settings(BaseSettings):
 
     allowed_origins: str = "*"  # 쉼표 구분 (예: https://buytiming.netlify.app)
     tz: str = "Asia/Seoul"
-    frontend_dir: str | None = None  # 지정하면 API가 프런트엔드 정적 파일도 서빙 (Render 단독 풀스택)
+    # 프런트엔드 정적 파일 폴더. 비우면 저장소의 frontend/를 찾아 있으면(로컬) 서빙, 없으면(EC2 api 컨테이너) API만 제공
+    frontend_dir: str | None = None
 
     @property
     def origins(self) -> list[str]:

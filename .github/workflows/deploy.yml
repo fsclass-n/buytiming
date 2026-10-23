@@ -12,6 +12,8 @@ name: Deploy
 #
 #   Netlify       : 프런트엔드 전용(데모 모드)
 #   Render        : 단독 풀스택(API + 프런트엔드, backend/Dockerfile.render). 가격 수집은 collect-render.yml
+#                   기본은 Render Auto-Deploy "After CI Checks Pass"(이 워크플로의 CI 통과 후 Render가 직접 배포)라
+#                   RENDER_DEPLOY_HOOK_URL을 등록하지 않으며 아래 render 작업은 건너뛴다. Auto-Deploy를 Off로 둘 때만 Hook을 등록.
 #   EC2(full)     : EC2에서 nginx + api + rpa 전체 스택 운영 (기본값)
 #   EC2(rpa-only) : API는 Render, EC2는 RPA 수집기만 운영  → Variable EC2_MODE=rpa-only
 #   비교 기준 커밋이 없으면(첫 push, 강제 push) 모든 대상에 배포한다.

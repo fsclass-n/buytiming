@@ -4,7 +4,7 @@ Render 서비스 하나가 **API와 프런트엔드 화면을 같은 도메인�
 이미지: [`backend/Dockerfile.render`](../../backend/Dockerfile.render) (빌드 컨텍스트 = 저장소 루트, 루트 [`.dockerignore`](../../.dockerignore)로 `backend/app`·`frontend/`만 포함).
 가격 수집은 GitHub Actions가 매시 대신 실행합니다(10 문서).
 
-준비물: 06 문서의 TiDB `DATABASE_URL`, GitHub 저장소 `fsclass-n/buytiming` 접근 권한, (선택) Gemini API 키
+준비물: 값을 채운 로컬 `.env`(06 문서, [`.env.example`](../../.env.example) 기반), GitHub 저장소 `fsclass-n/buytiming` 접근 권한
 
 ## 1. 서비스 만들기 / 기존 서비스 설정 바꾸기
 
@@ -23,43 +23,48 @@ Render 대시보드에서 이미 `buytiming` 서비스를 만들었다면 **Sett
 | Docker Build Context Directory | **`.`** (저장소 루트) |
 | Instance Type | **Free** |
 | Health Check Path | `/health` |
+| Auto-Deploy | **After CI Checks Pass** (3단계) |
+| Build Filters → Included Paths | `backend/**`, `frontend/**`, `render.yaml`, `.dockerignore` (3단계) |
 
 > 예전 설정(`./backend/Dockerfile`, 컨텍스트 `./backend`)으로 두면 API만 뜨고 화면(`/`)은 JSON 안내만 나옵니다.
 
-## 2. 환경 변수 (Environment)
+## 2. 환경 변수 — 로컬 `.env`를 그대로 붙여 넣기
 
-필수 6개:
+로컬 PC·EC2와 **같은 `.env`** 를 씁니다.
 
-| Key | Value |
+1. Render → buytiming 서비스 → **Environment** → **Add from .env**
+2. 로컬 `.env` 파일 내용을 전부 복사해 붙여 넣기 → 추가된 목록 확인 → **Save, rebuild, and deploy**
+   (예전에 넣은 같은 이름의 값이 있으면 새 값으로 바뀌었는지 확인합니다)
+
+| 붙여 넣으면 들어가는 값 | 비고 |
 |---|---|
-| `APP_ENV` | `production` |
-| `DATABASE_URL` | 06 문서의 TiDB 접속 문자열 (`mysql+pymysql://<USER>:<PASSWORD>@<HOST>:4000/buytiming?charset=utf8mb4`) |
-| `DB_SSL_CA` | `/etc/ssl/certs/ca-certificates.crt` |
-| `JWT_SECRET` | 무작위 긴 문자열 — `python -c "import secrets;print(secrets.token_urlsafe(48))"` |
-| `RPA_API_KEY` | 무작위 긴 문자열 — **GitHub Secret `RENDER_RPA_API_KEY`에도 같은 값**(10 문서) |
-| `ALLOWED_ORIGINS` | `https://buytiming.onrender.com` (같은 도메인 호출이라 자기 주소만 허용) |
+| `APP_ENV`, `DATABASE_URL`, `DB_SSL_CA`, `JWT_SECRET`, `RPA_API_KEY`, `ALLOWED_ORIGINS` | 필수 6개. 세 환경 모두 같은 값으로 동작 |
+| `ADMIN_EMAILS`, `GEMINI_API_KEY`, `KCA_API_URL`, `DATA_GO_KR_KEY`, `SEED_*` | 선택. 비어 있어도 문제없음 |
 
-선택:
+- `PORT`(Render가 주입), `TZ`·`FRONTEND_DIR`(Dockerfile에 설정됨)은 `.env`에 없으므로 따로 넣지 않습니다. **`FRONTEND_DIR`을 Render에 넣지 마세요**(Dockerfile 값을 덮어써 화면이 사라질 수 있음).
+- `.env` 값을 바꾸면 Render에도 같은 값을 다시 붙여 넣고, EC2에도 다시 복사합니다(08 문서).
+- `RPA_API_KEY`는 GitHub Secret `RENDER_RPA_API_KEY`에도 같은 값으로 등록합니다(10 문서).
 
-| Key | Value |
-|---|---|
-| `GEMINI_API_KEY` | Google AI Studio 키 (비우면 규칙 기반 템플릿 문장으로 동작) |
-| `ADMIN_EMAILS` | 관리자로 가입시킬 이메일(쉼표 구분) |
-| `GEMINI_MODEL`, `AI_DAILY_LIMIT` | 기본값(`gemini-2.5-flash`, `20`)이면 생략 |
+## 3. 자동 배포 — After CI Checks Pass
 
-`PORT`(Render가 주입), `TZ`·`FRONTEND_DIR`(Dockerfile에 설정됨)은 넣지 않습니다.
-`.env.example`의 `RPA_TARGET_API`, `SIMULATE_MALLS`, `KCA_*`, `MYSQL_*`, `SEED_*`는 Render에는 필요 없습니다.
+Settings → Build & Deploy → **Auto-Deploy: After CI Checks Pass**
 
-## 3. 자동 배포 끄기 (중요)
+| 선택지 | 동작 | 이 프로젝트 |
+|---|---|---|
+| On Commit | push하면 테스트 결과와 상관없이 바로 배포 | 테스트가 실패한 코드도 배포됨 |
+| **After CI Checks Pass** | push하면 GitHub Actions 검사가 모두 통과한 뒤 자동 배포 | **권장** — 커밋하면 자동 배포 + 테스트 실패 시 배포 안 함 |
+| Off | 자동 배포 없음 (Deploy Hook·수동 배포만) | 사용 안 함 |
 
-Settings → Build & Deploy → **Auto-Deploy: Off**
-
-- 배포는 GitHub Actions(`deploy.yml`)가 **CI 통과 후에만** Deploy Hook으로 요청합니다.
-- Auto-Deploy를 켜 두면 CI 결과와 상관없이 push마다 배포되고, Actions 배포와 겹쳐 두 번 배포됩니다.
+- 같은 화면의 **Build Filters → Included Paths**에 `backend/**`, `frontend/**`, `render.yaml`, `.dockerignore`를 넣으면
+  문서(`docs/`)·EC2 설정만 바뀐 커밋은 Render를 다시 빌드하지 않습니다.
+- 이 방식에서는 GitHub Secret `RENDER_DEPLOY_HOOK_URL`을 **등록하지 않습니다**. 등록하면 Actions도 배포를 요청해 두 번 배포됩니다.
+- Render는 그 커밋의 **모든** GitHub 검사가 성공(또는 건너뜀)해야 배포합니다. 같은 커밋에서 EC2 배포 작업이 실패하면 Render도 배포하지 않으니,
+  그때는 원인을 고친 뒤 다시 push하거나 Render에서 Manual Deploy를 누릅니다.
+- 배포를 원하지 않는 커밋은 메시지에 `[skip render]`를 넣으면 건너뜁니다.
 
 ## 4. 첫 배포와 확인
 
-1. **Manual Deploy → Deploy latest commit** (Docker 빌드에 몇 분 걸립니다)
+1. 환경 변수 저장 시 **Save, rebuild, and deploy**를 골랐다면 자동으로 배포가 시작됩니다. 아니면 **Manual Deploy → Deploy latest commit** (Docker 빌드에 몇 분 걸립니다)
 2. Logs에서 `Uvicorn running on http://0.0.0.0:10000` 확인
 3. 브라우저로 확인
 
@@ -70,13 +75,13 @@ Settings → Build & Deploy → **Auto-Deploy: Off**
    | https://buytiming.onrender.com/js/config.js | `API_BASE_URL: "/"` |
    | https://buytiming.onrender.com/docs | API 문서 |
 
-4. 시드 데이터가 아직 없으면 06 문서 4단계(PC에서) 또는 08 문서 8단계(EC2에서)로 한 번 넣습니다. Render 무료 플랜은 셸이 없습니다.
+4. 시드 데이터가 아직 없으면 06 문서 4단계(로컬 PC에서)로 한 번 넣습니다. Render 무료 플랜은 셸이 없습니다.
 5. 기동 실패 시 로그 메시지별 원인은 [11 문서](11-checklist-troubleshooting.md) 참고
 
-## 5. Deploy Hook 복사 (10 문서에서 사용)
+## 5. (사용 안 함) Deploy Hook
 
-Settings → **Deploy Hook** → URL 복사 → GitHub Secret `RENDER_DEPLOY_HOOK_URL`로 등록합니다.
-이 URL을 아는 사람은 누구나 배포를 일으킬 수 있으므로 공유하지 않습니다(유출되면 Regenerate).
+Settings → Deploy Hook URL은 Auto-Deploy를 **Off**로 두고 GitHub Actions가 배포를 요청하게 할 때만 GitHub Secret `RENDER_DEPLOY_HOOK_URL`로 등록합니다.
+이번 구성(After CI Checks Pass)에서는 등록하지 않습니다. 이 URL을 아는 사람은 누구나 배포를 일으킬 수 있으므로 공유하지 않습니다.
 
 ## 6. 무료 플랜 특성
 

@@ -109,9 +109,5 @@ jobs:
           curl -fsS http://localhost:8001/ | grep -q "js/config.js" \
             && curl -fsS http://localhost:8001/js/config.js | grep -q 'API_BASE_URL: "/"' \
             || { docker logs render; exit 1; }
-      - name: Compose 설정 검증
-        # localdb 프로필의 필수 변수는 검증용 임시 값으로 채운다
-        env:
-          MYSQL_PASSWORD: ci-only
-          MYSQL_ROOT_PASSWORD: ci-only
-        run: cp .env.example .env && docker compose config -q && docker compose --profile localdb config -q
+      - name: Compose 설정 검증 (.env.example을 그대로 복사해도 동작해야 함)
+        run: cp .env.example .env && docker compose config -q
