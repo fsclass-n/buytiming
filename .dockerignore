@@ -1,6 +1,8 @@
 # 저장소 루트를 컨텍스트로 쓰는 빌드(backend/Dockerfile.render, Render)에서 필요한 파일만 보낸다.
 # backend/·rpa/ 폴더를 컨텍스트로 쓰는 빌드(EC2 compose, CI)는 각 폴더의 .dockerignore를 사용한다.
 *
+# Dockerfile 자신도 포함해야 한다 (Render 빌더는 .dockerignore를 Dockerfile에도 적용 → 빠지면 "open Dockerfile.render: no such file")
+!backend/Dockerfile.render
 !backend/requirements.txt
 !backend/app/
 !frontend/
