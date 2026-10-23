@@ -45,7 +45,8 @@ def test_bulk_prices_create_target_alert(client, user_h):
 
 def test_bulk_prices_skip_same_hour(client):
     """EC2 수집기와 GitHub Actions 수집기가 같은 시간대에 보내도 한 번만 저장"""
-    listing = client.get(f"{API}/listings", headers=RPA).json()["items"][0]
+    # 목록 순서는 DB마다 다르고, 다른 테스트가 등록한 가격 없는 판매처가 섞일 수 있다
+    listing = next(i for i in client.get(f"{API}/listings", headers=RPA).json()["items"] if i["last_price"])
     body = {"items": [{"listing_id": listing["listing_id"], "price": listing["last_price"]}]}
     first = client.post(f"{API}/prices/bulk", headers=RPA, json={**body, "collected_at": _at(3)}).json()
     second = client.post(f"{API}/prices/bulk", headers=RPA,
