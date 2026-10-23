@@ -1,8 +1,10 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from .config import get_settings
@@ -37,6 +39,24 @@ def health():
     return {"status": "ok", "env": settings.app_env, "gemini": bool(settings.gemini_api_key)}
 
 
-@app.get("/", include_in_schema=False)
-def root():
-    return {"service": "BuyTiming API", "docs": "/docs", "health": "/health"}
+SECURITY_HEADERS = {"X-Frame-Options": "DENY", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin"}
+
+if settings.frontend_dir and Path(settings.frontend_dir).is_dir():
+    # Render 단독 풀스택: 프런트엔드와 API를 같은 도메인으로 제공 (EC2에서는 nginx가 같은 역할)
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        response = await call_next(request)
+        for k, v in SECURITY_HEADERS.items():
+            response.headers.setdefault(k, v)
+        return response
+
+    @app.get("/js/config.js", include_in_schema=False)
+    def frontend_config():
+        return Response('window.APP_CONFIG = { API_BASE_URL: "/" };\n', media_type="application/javascript",
+                        headers={"Cache-Control": "no-cache"})
+
+    app.mount("/", StaticFiles(directory=settings.frontend_dir, html=True), name="frontend")
+else:
+    @app.get("/", include_in_schema=False)
+    def root():
+        return {"service": "BuyTiming API", "docs": "/docs", "health": "/health"}

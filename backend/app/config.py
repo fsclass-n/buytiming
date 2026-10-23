@@ -25,6 +25,7 @@ class Settings(BaseSettings):
 
     allowed_origins: str = "*"  # 쉼표 구분 (예: https://buytiming.netlify.app)
     tz: str = "Asia/Seoul"
+    frontend_dir: str | None = None  # 지정하면 API가 프런트엔드 정적 파일도 서빙 (Render 단독 풀스택)
 
     @property
     def origins(self) -> list[str]:

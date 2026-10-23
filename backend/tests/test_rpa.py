@@ -2,6 +2,8 @@ import base64
 
 from conftest import RPA
 
+from app.config import now_local
+
 API = "/api/v1/rpa"
 
 
@@ -16,23 +18,40 @@ def test_listings_include_last_price(client):
     assert len(items) >= 36 and all("last_price" in i for i in items)
 
 
+def _at(hour: int) -> str:
+    """오늘 hour시 30분 (시드 가격은 매일 12:00이라 겹치지 않는 시간대)"""
+    return now_local().replace(hour=hour, minute=30, second=0, microsecond=0).isoformat()
+
+
 def test_bulk_prices_create_target_alert(client, user_h):
     listings = [i for i in client.get(f"{API}/listings", headers=RPA).json()["items"] if i["model_no"] == "MF800-3"]
     # 시드: 데모 사용자가 분유(MF800-3)를 목표가 80,000원으로 관심 등록
     res = client.post(f"{API}/prices/bulk", headers=RPA,
-                      json={"items": [{"listing_id": l["listing_id"], "price": 70000, "shipping_fee": 0} for l in listings] +
+                      json={"collected_at": _at(1),
+                            "items": [{"listing_id": l["listing_id"], "price": 70000, "shipping_fee": 0} for l in listings] +
                                      [{"listing_id": 999999, "price": 1}]}).json()
     assert res["inserted"] == len(listings) and res["skipped"] == 1 and res["alerts_created"] >= 1
     alerts = client.get("/api/v1/alerts", headers=user_h).json()
     assert any(a["type"] == "TARGET_PRICE" and "분유" in a["message"] for a in alerts["items"])
     # 24시간 안에는 같은 목표가 알림을 다시 보내지 않는다
     again = client.post(f"{API}/prices/bulk", headers=RPA,
-                        json={"items": [{"listing_id": l["listing_id"], "price": 69000} for l in listings]}).json()
+                        json={"collected_at": _at(2), "items": [{"listing_id": l["listing_id"], "price": 69000} for l in listings]}).json()
     before = sum(a["type"] == "TARGET_PRICE" and "분유" in a["message"] for a in alerts["items"])
     after = sum(a["type"] == "TARGET_PRICE" and "분유" in a["message"]
                 for a in client.get("/api/v1/alerts", headers=user_h).json()["items"])
     assert again["inserted"] == len(listings) and after == before
     assert client.post("/api/v1/alerts/read-all", headers=user_h).json()["updated"] >= 1
+
+
+def test_bulk_prices_skip_same_hour(client):
+    """EC2 수집기와 GitHub Actions 수집기가 같은 시간대에 보내도 한 번만 저장"""
+    listing = client.get(f"{API}/listings", headers=RPA).json()["items"][0]
+    body = {"items": [{"listing_id": listing["listing_id"], "price": listing["last_price"]}]}
+    first = client.post(f"{API}/prices/bulk", headers=RPA, json={**body, "collected_at": _at(3)}).json()
+    second = client.post(f"{API}/prices/bulk", headers=RPA,
+                         json={**body, "collected_at": now_local().replace(hour=3, minute=59).isoformat()}).json()
+    assert (first["inserted"], first["duplicate"]) == (1, 0)
+    assert (second["inserted"], second["duplicate"]) == (0, 1)
 
 
 def test_public_prices_and_logs(client):

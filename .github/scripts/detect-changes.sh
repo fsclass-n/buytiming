@@ -41,7 +41,8 @@ rp=$(bool has '^rpa/')
 compose=$(bool has '^docker-compose\.yml$')
 dep=$(bool has '^deploy/')
 ntl=$(bool has '^(frontend/|netlify\.toml$)')
-rnd=$(bool has '^(backend/|render\.yaml$)')
+# Render는 프런트엔드까지 함께 서빙하는 단독 풀스택 이미지(backend/Dockerfile.render, 컨텍스트 = 저장소 루트)
+rnd=$(bool has '^(backend/|frontend/|render\.yaml$|\.dockerignore$)')
 all=$([ "$files" = "__all__" ] || [ "$compose" = true ] && echo true || echo false)
 
 services=""

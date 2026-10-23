@@ -8,7 +8,7 @@
 | **MySQL 8** | 개발·통합 테스트 | 개발자 PC, GitHub Actions CI(이미 구성됨) |
 | SQLite | 빠른 로컬 실행·단위 테스트 | 개발자 PC, CI |
 
-코드 변경은 필요 없습니다. 백엔드는 `DATABASE_URL`만 보고 SQLite / MySQL·TiDB를 구분하며([`database.py`](../backend/app/database.py)),
+코드 변경은 필요 없습니다. 백엔드는 `DATABASE_URL`만 보고 SQLite / MySQL·TiDB를 구분하며([`database.py`](../../backend/app/database.py)),
 `DB_SSL_CA`가 있으면 TLS로 접속합니다. 연결은 280초마다 재생성(`pool_recycle=280`)되어, 유휴 연결을 끊는 TiDB Starter의 특성(공식 문서 권장값 300초)에 맞춰져 있습니다.
 
 ## 2. TiDB Cloud 준비

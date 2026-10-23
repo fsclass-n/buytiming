@@ -5,22 +5,25 @@ Claude는 이 저장소에서 작업을 시작하기 전에 이 문서를 먼저
 
 ## 1. 프로젝트 한 줄 요약
 
-RPA가 쇼핑몰·공공 가격을 1시간마다 수집 → FastAPI 백엔드가 저장·분석(scikit-learn) → Gemini가 "지금 사도 되는가"를 설명 → Netlify 정적 프런트엔드가 보여준다.
+RPA가 쇼핑몰·공공 가격을 1시간마다 수집 → FastAPI 백엔드가 저장·분석(scikit-learn) → Gemini가 "지금 사도 되는가"를 설명 → 정적 프런트엔드가 보여준다.
 Final-Project 3조 팀 저장소이며 `main`에 push하면 **실제 운영 환경(Netlify · Render · AWS EC2)에 자동 배포**된다.
+
+운영 구성: **Netlify = 프런트엔드 데모 모드(API 연결 없음)**, **Render·EC2 = 각각 독립된 풀스택**(서로 호출하지 않음),
+**DB = TiDB 하나를 Render·EC2가 공유**, MySQL 8은 개발·CI 전용. Render 가격 수집은 GitHub Actions(`collect-render.yml`), EC2는 rpa 컨테이너.
 
 ## 2. 폴더와 배포 대상
 
 | 경로 | 내용 | 배포 대상 (main push 시) |
 |---|---|---|
-| `frontend/` | HTML + Vanilla JS(ES Modules) + Bootstrap 5, 번들러 없음 | Netlify, EC2(nginx, git pull) |
+| `frontend/` | HTML + Vanilla JS(ES Modules) + Bootstrap 5, 번들러 없음 | Netlify, Render(풀스택 이미지), EC2(nginx, git pull) |
 | `netlify.toml` | Netlify 설정 (base=frontend) | Netlify |
-| `backend/` | Python 3.11 · FastAPI · SQLAlchemy, Docker | Render, EC2(api) |
-| `render.yaml` | Render Blueprint | Render |
+| `backend/` | Python 3.11 · FastAPI · SQLAlchemy. `Dockerfile`(EC2·CI용 API), `Dockerfile.render`(Render용 API+프런트) | Render, EC2(api) |
+| `render.yaml`, `.dockerignore`(루트) | Render Blueprint, Render 빌드 컨텍스트(저장소 루트) 필터 | Render |
 | `rpa/` | 가격 수집기(Requests · BeautifulSoup), Docker | EC2(rpa) |
 | `docker-compose.yml` | EC2 전체 스택(web + api + rpa [+ mysql]) | EC2 전체 재빌드 |
 | `deploy/` | nginx.conf, EC2 설정 스크립트 | EC2(nginx 재시작) |
-| `.github/` | CI(`ci.yml`), 배포(`deploy.yml`, `scripts/detect-changes.sh`) | 배포 없음(파이프라인 자체 변경) |
-| `.claude/`, `CLAUDE.md`, `README.md`, `docs/` | Claude 설정·문서 (배포 절차는 `docs/README.md`) | **배포 없음** |
+| `.github/` | CI(`ci.yml`), 배포(`deploy.yml`, `scripts/detect-changes.sh`), Render 수집(`collect-render.yml`) | 배포 없음(파이프라인 자체 변경) |
+| `.claude/`, `CLAUDE.md`, `README.md`, `docs/` | Claude 설정·문서 (배포 절차는 `docs/md/README.md`) | **배포 없음** |
 
 ## 3. 자주 쓰는 명령
 
@@ -51,7 +54,8 @@ CHANGED_FILES="backend/app/main.py" EVENT=push bash .github/scripts/detect-chang
 4. **비밀값**: `.env`·API 키·DB 접속 문자열을 커밋하거나 출력하지 않는다. 새 환경 변수가 필요하면 `.env.example`과 `render.yaml`(`sync: false`)에 키만 추가한다.
    Gemini 키는 서버(backend)에만 둔다. 브라우저 코드에서 Gemini를 직접 호출하지 않는다.
 5. **`frontend/js/config.js`**: Netlify 빌드 때 `build.sh`가 다시 생성한다. 커밋되는 버전은 `API_BASE_URL: ""`(데모 모드)를 유지한다.
-   로컬에서 `build.sh`를 실행해 바뀐 config.js는 커밋하지 않는다.
+   로컬에서 `build.sh`를 실행해 바뀐 config.js는 커밋하지 않는다. Render(FastAPI)와 EC2(nginx)는 `/js/config.js`를 같은 도메인 설정(`"/"`)으로 바꿔 응답한다.
+   Netlify에 `API_BASE_URL`을 등록하지 않는다(데모 모드 유지 결정).
 6. **프런트엔드 빌드 체계 유지**: npm·번들러·React 등을 도입하지 않는다(Netlify는 `sh build.sh`만 실행, CI는 `node --check`로 문법만 검사).
    새 JS 파일은 `frontend/js/` 또는 `frontend/js/pages/`에 ES Module로 둔다.
 7. **DB 호환성**: 운영은 TiDB(MySQL 호환), 개발은 MySQL 8 / SQLite, CI는 SQLite와 MySQL 8 둘 다 테스트한다.

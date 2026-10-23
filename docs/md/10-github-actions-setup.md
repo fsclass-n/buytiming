@@ -1,18 +1,23 @@
-# 10. [배포 5단계] GitHub Actions 자동 배포 등록
+# 10. [배포 5단계] GitHub Actions 등록 — 자동 배포 + Render 가격 수집
 
-07~09를 마치면 수동 배포는 끝난 상태입니다. 이 단계에서 값을 등록하면 이후 `main` push 때
-**CI 통과 → 바뀐 폴더에 해당하는 Render·EC2만 자동 배포**됩니다(05 문서). 등록하지 않은 대상은 건너뜁니다.
+07~09를 마치면 수동 배포는 끝난 상태입니다. 이 단계에서 값을 등록하면
+- `main` push 때 **CI 통과 → 바뀐 폴더에 해당하는 Render·EC2만 자동 배포**(05 문서)
+- **매시 07분 Render용 가격 수집**(`collect-render.yml`, 04 문서)
+
+이 동작합니다. 값을 등록하지 않은 대상·작업은 자동으로 건너뜁니다.
 
 등록 위치: GitHub `fsclass-n/buytiming` → **Settings → Secrets and variables → Actions** (저장소 관리자 권한 필요)
 
 ## 1. Secrets (암호화 저장)
 
-| Name | 값 | 얻는 곳 |
-|---|---|---|
-| `RENDER_DEPLOY_HOOK_URL` | `https://api.render.com/deploy/srv-...?key=...` | Render → Settings → Deploy Hook (07 문서 6단계) |
-| `EC2_HOST` | `buytiming.duckdns.org` (또는 Elastic IP) | 08 문서 2단계 |
-| `EC2_USER` | `ubuntu` | Ubuntu AMI 기본 사용자 |
-| `EC2_SSH_KEY` | `.pem` 파일 **전체 내용** (`-----BEGIN ... KEY-----`부터 `-----END ... KEY-----`까지 줄바꿈 포함) | 08 문서 1단계의 키 페어 |
+| Name | 값 | 얻는 곳 | 사용처 |
+|---|---|---|---|
+| `RENDER_DEPLOY_HOOK_URL` | `https://api.render.com/deploy/srv-...?key=...` | Render → Settings → Deploy Hook (07 문서 5단계) | 자동 배포 |
+| `RENDER_RPA_API_KEY` | Render 환경 변수 `RPA_API_KEY`와 **같은 값** | 07 문서 2단계 | Render 가격 수집 |
+| `EC2_HOST` | `buytiming.duckdns.org` (또는 Elastic IP) | 08 문서 2단계 | 자동 배포 |
+| `EC2_USER` | `ubuntu` | Ubuntu AMI 기본 사용자 | 자동 배포 |
+| `EC2_SSH_KEY` | `.pem` 파일 **전체 내용** (`-----BEGIN ... KEY-----`부터 `-----END ... KEY-----`까지 줄바꿈 포함) | 08 문서 1단계의 키 페어 | 자동 배포 |
+| `DATA_GO_KR_KEY` | 공공데이터포털 서비스 키 (선택) | data.go.kr | Render 참가격 수집 |
 
 > Netlify가 **Git 연동**이면 `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID`는 등록하지 않습니다. 등록하면 같은 커밋이 두 번 배포됩니다.
 > Netlify를 Actions로 배포하려면(수동 업로드 사이트였던 경우) Netlify → User settings → Applications → Personal access token을
@@ -23,9 +28,12 @@
 | Name | 값 | 비고 |
 |---|---|---|
 | `RENDER_HEALTH_URL` | `https://buytiming.onrender.com/health` | 배포 후 헬스 체크 |
+| `RENDER_URL` | `https://buytiming.onrender.com` | Render 가격 수집 대상 (끝에 `/` 없이) |
 | `EC2_APP_DIR` | `~/buytiming` | 기본값과 같으면 생략 가능 |
 | `EC2_MODE` | `full` | 기본값과 같으면 생략 가능 (`rpa-only`로 두지 않음) |
-| `API_BASE_URL` | `https://buytiming.onrender.com` | Netlify를 Actions로 배포할 때만 사용 |
+| `KCA_API_URL` | 참가격 API 주소 (선택) | Render 참가격 수집 |
+
+`API_BASE_URL`은 **등록하지 않습니다**(Netlify 데모 모드 유지).
 
 ## 3. EC2 보안 그룹 22번 포트 (주의)
 
@@ -54,7 +62,11 @@
    | AWS EC2 (docker compose) | `git pull` → `docker compose up` → `{"status":"ok"...}` |
    | Netlify (frontend) | `frontend/` 변경이 없으면 작업 자체가 skipped. 수동 실행 + Git 연동이면 "Netlify Git 연동(netlify.toml)으로 배포하거나 ..." 안내만 출력 — 둘 다 정상 |
 
-3. 이후에는 평소처럼 `main`에 push하면 됩니다. 예: `backend/`만 바꾸면 Render + EC2(api)만 배포, `docs/`만 바꾸면 배포 없음.
+3. 이후에는 평소처럼 `main`에 push하면 됩니다. 예: `backend/`만 바꾸면 Render + EC2(api)만 배포, `frontend/`를 바꾸면 Netlify·Render·EC2 모두, `docs/`만 바꾸면 배포 없음.
+4. **Render 가격 수집 확인**: Actions → **Collect (Render)** → Run workflow → `collect` 실행
+   - 성공 기준: "Render 깨우기"에서 `{"status":"ok"...}`, "작업 실행"에서 `{'status': 'SUCCESS', 'inserted': ..., 'duplicate': ...}`
+   - 이후 매시 07분에 자동 실행됩니다(몇 분 늦을 수 있음). 실행 기록은 Actions → Collect (Render)에서 확인합니다.
+   - 공개 저장소에 60일간 활동이 없으면 GitHub가 예약 실행을 멈춥니다. 그때는 이 화면에서 **Enable workflow**를 누릅니다.
 
 ## 5. 실패했을 때
 
@@ -65,5 +77,8 @@
 | EC2 | `fatal: Not possible to fast-forward` | 서버에서 추적 파일을 직접 수정함 → 서버에서 `git status` 확인 후 되돌림 |
 | EC2 | `required variable MYSQL_PASSWORD is missing a value` | EC2 `.env`에 placeholder 값 입력(08 문서 6단계) |
 | Render | 헬스 체크 실패 | Render Logs 확인 — DB 접속 값, `JWT_SECRET`·`RPA_API_KEY` 누락 |
+| Collect (Render) | "실행할 작업 결정"에서 건너뜀 안내 | Variable `RENDER_URL` 또는 Secret `RENDER_RPA_API_KEY` 미등록 |
+| Collect (Render) | `401 ... INVALID_RPA_KEY` | `RENDER_RPA_API_KEY`가 Render의 `RPA_API_KEY`와 다름 |
+| Collect (Render) | `Render 헬스 체크 실패` | Render 서비스 중지·배포 실패, `RENDER_URL` 오타 |
 
 다음 문서: [11. 최종 점검과 문제 해결](11-checklist-troubleshooting.md)

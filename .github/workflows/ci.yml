@@ -101,6 +101,14 @@ jobs:
           docker run -d --name api -p 8000:8000 -e DATABASE_URL=sqlite:////app/data/ci.db buytiming-api:ci
           for i in $(seq 1 30); do curl -fsS http://localhost:8000/health && exit 0; sleep 2; done
           docker logs api; exit 1
+      - name: Render 풀스택 이미지 빌드·확인 (API + 프런트엔드 같은 도메인)
+        run: |
+          docker build -f backend/Dockerfile.render -t buytiming-render:ci .
+          docker run -d --name render -p 8001:10000 -e PORT=10000 -e DATABASE_URL=sqlite:////app/data/ci.db buytiming-render:ci
+          for i in $(seq 1 30); do curl -fsS http://localhost:8001/health && break; sleep 2; done
+          curl -fsS http://localhost:8001/ | grep -q "js/config.js" \
+            && curl -fsS http://localhost:8001/js/config.js | grep -q 'API_BASE_URL: "/"' \
+            || { docker logs render; exit 1; }
       - name: Compose 설정 검증
         # localdb 프로필의 필수 변수는 검증용 임시 값으로 채운다
         env:

@@ -1,6 +1,7 @@
-# 08. [배포 3단계] AWS EC2 — 전체 스택 (http://buytiming.duckdns.org)
+# 08. [배포 3단계] AWS EC2 — 단독 풀스택 (http://buytiming.duckdns.org)
 
-EC2 한 대에서 [`docker-compose.yml`](../docker-compose.yml)의 세 컨테이너를 운영합니다. DB는 컨테이너가 아니라 **TiDB**(Render와 공유)입니다.
+EC2 한 대에서 [`docker-compose.yml`](../../docker-compose.yml)의 세 컨테이너로 화면·API·가격 수집을 모두 운영합니다.
+Render를 호출하지 않으며, DB만 **TiDB**(Render와 공유)를 씁니다.
 
 | 컨테이너 | 역할 |
 |---|---|
@@ -42,7 +43,7 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 free -h
 ```
 
-## 5. 저장소 받기 + Docker 설치 ([`deploy/ec2-setup.sh`](../deploy/ec2-setup.sh))
+## 5. 저장소 받기 + Docker 설치 ([`deploy/ec2-setup.sh`](../../deploy/ec2-setup.sh))
 
 스크립트는 상태에 따라 한 단계씩 진행합니다. 여기서 **두 번** 실행하고, 기동은 6단계(.env 작성) 후 7단계에서 직접 합니다.
 
@@ -60,59 +61,37 @@ bash ~/buytiming/deploy/ec2-setup.sh https://github.com/fsclass-n/buytiming.git
 
 ## 6. `~/buytiming/.env` 작성 (가장 중요)
 
+`ec2-setup.sh`가 복사한 `.env`(예시 파일)는 로컬 개발용 항목까지 있어 복잡합니다. **아래 최소 버전으로 통째로 바꿉니다.**
+
 ```bash
-nano ~/buytiming/.env      # 또는 vi
+nano ~/buytiming/.env      # 기존 내용을 모두 지우고 아래를 붙여 넣은 뒤 < > 부분만 바꿈
 chmod 600 ~/buytiming/.env
 ```
 
-아래 내용으로 채웁니다. `< >` 부분만 실제 값으로 바꿉니다.
-
 ```dotenv
-# --- 백엔드 ---
 APP_ENV=production
 DATABASE_URL=mysql+pymysql://<TiDB USER>:<URL 인코딩한 비밀번호>@<TiDB HOST>:4000/buytiming?charset=utf8mb4
 DB_SSL_CA=/etc/ssl/certs/ca-certificates.crt
 JWT_SECRET=<무작위 긴 문자열>
-JWT_EXPIRE_MINUTES=60
-ADMIN_EMAILS=
-ALLOWED_ORIGINS=https://buytiming.netlify.app
-TZ=Asia/Seoul
-
-# --- Gemini ---
-GEMINI_API_KEY=<키 또는 비움>
-GEMINI_MODEL=gemini-2.5-flash
-AI_DAILY_LIMIT=20
-
-# --- RPA ↔ API 공용 키 (Render와 같은 값 권장) ---
 RPA_API_KEY=<무작위 긴 문자열>
-
-# --- RPA 수집기 ---
+ALLOWED_ORIGINS=http://buytiming.duckdns.org
 RPA_TARGET_API=http://api:8000
-REQUEST_INTERVAL_SEC=3
-SIMULATE_MALLS=true
-KCA_API_URL=
-DATA_GO_KR_KEY=
-
-# --- 시드 계정 비밀번호 (비우면 무작위 생성 후 출력) ---
-SEED_DEMO_PASSWORD=
-SEED_ADMIN_PASSWORD=
-
-# --- localdb 프로필은 쓰지 않지만 compose 검증 때문에 비워 두면 안 됨 ---
-MYSQL_PASSWORD=unused-not-local-db
-MYSQL_ROOT_PASSWORD=unused-not-local-db
+MYSQL_PASSWORD=unused
+MYSQL_ROOT_PASSWORD=unused
 ```
 
-### 반드시 고칠 값 (예시 파일 그대로면 실패)
+선택 항목(필요할 때만 추가): `GEMINI_API_KEY=<키>`, `ADMIN_EMAILS=<이메일>`, `KCA_API_URL`·`DATA_GO_KR_KEY`(참가격), `SEED_DEMO_PASSWORD`·`SEED_ADMIN_PASSWORD`.
+나머지(`GEMINI_MODEL`, `AI_DAILY_LIMIT`, `JWT_EXPIRE_MINUTES`, `TZ`, `REQUEST_INTERVAL_SEC`, `SIMULATE_MALLS`)는 기본값이 있어 넣지 않아도 됩니다.
 
-| 항목 | `.env.example` 값 | 문제 | 설정할 값 |
-|---|---|---|---|
-| `RPA_TARGET_API` | `http://localhost:8000` | compose가 이 값을 우선 사용 → 수집기가 API에 연결 못 함 | `http://api:8000` |
-| `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` | 빈 값 | compose는 프로필과 관계없이 파일 전체의 `${VAR:?}`를 검사 → `docker compose up` 자체가 오류 | 아무 문자열(사용 안 됨) |
-| `APP_ENV` | `development` | 비밀값 검사가 꺼짐 | `production` |
-| `ALLOWED_ORIGINS` | `*` | 모든 사이트에서 API 호출 허용 | `https://buytiming.netlify.app` |
+| 항목 | 이유 |
+|---|---|
+| `DATABASE_URL`, `DB_SSL_CA` | Render와 **같은 값**(같은 TiDB 공유) |
+| `JWT_SECRET`, `RPA_API_KEY` | EC2 전용 값. Render와 **달라도 됨**(독립 운영). `RPA_API_KEY`는 같은 `.env`를 api·rpa가 함께 읽으므로 자동으로 일치 |
+| `ALLOWED_ORIGINS` | 화면과 API가 같은 도메인이라 CORS가 필요 없으므로 자기 주소만 허용 |
+| `RPA_TARGET_API=http://api:8000` | 예시 파일의 `http://localhost:8000`이 남아 있으면 compose가 그 값을 우선 사용 → 수집기가 API에 연결 못 함 |
+| `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` | 로컬 MySQL은 쓰지 않지만, compose는 프로필과 관계없이 파일 전체의 `${VAR:?}`를 검사 → 비어 있으면 `docker compose up` 자체가 오류 |
 
 - 값에 `$`가 들어 있으면 compose가 변수로 해석합니다. 그런 값은 작은따옴표로 감쌉니다(`JWT_SECRET='ab$cd'`).
-- EC2 화면(buytiming.duckdns.org)은 같은 도메인으로 API를 부르므로 `ALLOWED_ORIGINS`에 따로 넣지 않아도 됩니다.
 
 ## 7. 기동
 
@@ -138,7 +117,8 @@ TiDB를 Render와 공유하므로 여기서 한 번 넣으면 Render API에서�
 
 ```bash
 docker compose logs -f rpa                                   # "scheduler started (tz=Asia/Seoul, api=http://api:8000)"
-docker compose exec rpa python -m collector.jobs collect     # 즉시 1회 수집 → {'status': 'SUCCESS', 'inserted': 36, ...} (시드 기준 12상품 × 3쇼핑몰)
+docker compose exec rpa python -m collector.jobs collect     # 즉시 1회 수집 → {'status': 'SUCCESS', 'inserted': 36, 'duplicate': 0, ...} (시드 기준 12상품 × 3쇼핑몰)
+# 같은 시간대에 Render용 Actions 수집이 먼저 돌았다면 'inserted': 0, 'duplicate': 36 — 중복 방지가 동작한 것(정상)
 ```
 
 관리자 계정으로 로그인 → 관리자 화면에서 수집 로그가 쌓이는지 확인합니다.
@@ -157,11 +137,11 @@ docker compose exec rpa python -m collector.jobs collect     # 즉시 1회 수�
 
 ## 11. (선택) HTTPS 구성
 
-Netlify는 Render API를 쓰므로 EC2 HTTPS가 없어도 서비스는 동작합니다. 다만 http://buytiming.duckdns.org 화면은
-로그인 비밀번호가 암호화되지 않은 채 전송되므로, 시연·운영 전에 HTTPS를 권장합니다.
+EC2는 HTTP만으로도 동작하지만, http://buytiming.duckdns.org 화면은 로그인 비밀번호가 암호화되지 않은 채 전송되므로
+시연·운영 전에 HTTPS를 권장합니다. HTTPS로 바꾸면 `.env`의 `ALLOWED_ORIGINS`도 `https://buytiming.duckdns.org`로 바꿉니다.
 
 - 방법: Let's Encrypt(certbot)로 `buytiming.duckdns.org` 인증서 발급 → nginx에 443 서버 블록 추가·80→443 리다이렉트 →
   compose `web`에 `443:443` 포트와 인증서 볼륨 추가 → 보안 그룹 443 열기 → 인증서 자동 갱신 설정
 - `deploy/nginx.conf`, `docker-compose.yml`을 바꾸는 작업이므로(EC2 전체 재배포 발생) 별도 작업으로 팀 승인 후 진행합니다.
 
-다음 문서: [09. Netlify ↔ Render 연결](09-netlify-connect.md)
+다음 문서: [09. Netlify (데모 모드 유지)](09-netlify-connect.md)

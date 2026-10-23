@@ -1,21 +1,32 @@
 # 02. 백엔드 (FastAPI)
 
-소스: [`backend/app/`](../backend/app). Render와 EC2는 **같은 Docker 이미지**([`backend/Dockerfile`](../backend/Dockerfile))를 사용합니다.
+소스: [`backend/app/`](../../backend/app). 같은 코드를 두 가지 이미지로 빌드합니다.
+
+| 이미지 | Dockerfile | 빌드 컨텍스트 | 내용 | 사용처 |
+|---|---|---|---|---|
+| API | [`backend/Dockerfile`](../../backend/Dockerfile) | `./backend` | API만 (프런트엔드는 nginx가 담당) | EC2, CI |
+| 풀스택 | [`backend/Dockerfile.render`](../../backend/Dockerfile.render) | 저장소 루트 `.` | API + `frontend/` (`FRONTEND_DIR=/app/frontend`) | Render |
+
+저장소 루트를 컨텍스트로 쓰는 Render 빌드는 루트 [`.dockerignore`](../../.dockerignore)가 `backend/app`, `backend/requirements.txt`, `frontend/`만 남깁니다.
 
 ## 1. 시작 과정
 
-[`main.py`](../backend/app/main.py) 기준:
+[`main.py`](../../backend/app/main.py) 기준:
 
 1. 환경 변수 읽기 → `APP_ENV=production`인데 `JWT_SECRET`·`RPA_API_KEY`가 비어 있거나 기본값이면 **기동 거부**
 2. `init_db()` → 테이블이 없으면 생성 (`create_all`, 별도 마이그레이션 도구 없음)
 3. CORS 설정(`ALLOWED_ORIGINS`), 라우터 6개를 `/api/v1` 아래에 등록
 4. `GET /health` → DB에 `SELECT 1`을 실행해 성공하면 `{"status":"ok"}` — Render·EC2·CI가 모두 이 경로로 상태를 확인
+5. `FRONTEND_DIR`이 있으면(Render) 프런트엔드 서빙 — API 경로(`/api/v1`, `/health`, `/docs`, `/openapi.json`)가 먼저 처리되고 나머지는 정적 파일
+   - `/js/config.js` → `API_BASE_URL: "/"`(같은 도메인)를 동적으로 응답 (저장소의 데모용 config.js 대신)
+   - 없는 경로는 `404.html`, 보안 헤더(`X-Frame-Options`, `nosniff`, `Referrer-Policy`)를 추가
+   - `FRONTEND_DIR`이 없으면(EC2·로컬) `/`는 기존처럼 API 안내 JSON을 돌려줍니다.
 
 Docker 실행 명령은 `uvicorn app.main:app --port ${PORT:-8000}` 입니다. Render는 `PORT`를 주입하고(기본 10000), EC2는 8000을 씁니다.
 
 ## 2. 환경 변수
 
-[`config.py`](../backend/app/config.py), [`.env.example`](../.env.example) 기준입니다.
+[`config.py`](../../backend/app/config.py), [`.env.example`](../../.env.example) 기준입니다.
 
 | 변수 | 기본값 | 설명 | Render | EC2 |
 |---|---|---|---|---|
@@ -24,17 +35,18 @@ Docker 실행 명령은 `uvicorn app.main:app --port ${PORT:-8000}` 입니다. R
 | `DB_SSL_CA` | (없음) | TLS CA 파일 경로 (TiDB 필수) | `/etc/ssl/certs/ca-certificates.crt` | 같음 |
 | `JWT_SECRET` | change-me | 로그인 토큰 서명 키 | 자동 생성 | 직접 생성 |
 | `JWT_EXPIRE_MINUTES` | 60 | 토큰 유효 시간(분) | — | — |
-| `RPA_API_KEY` | change-me-rpa | RPA 전용 API 인증 키 | 같은 값 권장 | rpa와 api가 **반드시 같은 값** |
+| `RPA_API_KEY` | change-me-rpa | RPA 전용 API 인증 키 | GitHub Secret `RENDER_RPA_API_KEY`와 같은 값 | rpa와 api가 **반드시 같은 값** (Render와 달라도 됨) |
 | `ADMIN_EMAILS` | (없음) | 이 이메일로 가입하면 관리자 | 선택 | 선택 |
 | `GEMINI_API_KEY` | (없음) | 비우면 규칙 기반 템플릿 문장으로 동작 | 선택 | 선택 |
 | `GEMINI_MODEL` | gemini-2.5-flash | | | |
 | `AI_DAILY_LIMIT` | 20 | 사용자별 일일 Gemini 호출 한도 | | |
-| `ALLOWED_ORIGINS` | * | CORS 허용 출처(쉼표 구분) | `https://buytiming.netlify.app` | `https://buytiming.netlify.app` |
+| `ALLOWED_ORIGINS` | * | CORS 허용 출처(쉼표 구분). 두 서버 모두 같은 도메인 호출이라 자기 주소만 허용 | `https://buytiming.onrender.com` | `http://buytiming.duckdns.org` |
 | `TZ` | Asia/Seoul | 서비스 기준 시간대 | Dockerfile에 설정됨 | |
+| `FRONTEND_DIR` | (없음) | 지정하면 프런트엔드 정적 파일도 서빙 | `Dockerfile.render`에 `/app/frontend`로 설정됨 | 설정하지 않음 (nginx 담당) |
 
 ## 3. DB 테이블 12개
 
-[`models.py`](../backend/app/models.py). 시간은 모두 **KST 기준 naive datetime**으로 저장합니다.
+[`models.py`](../../backend/app/models.py). 시간은 모두 **KST 기준 naive datetime**으로 저장합니다.
 
 | 테이블 | 내용 | 주요 관계 |
 |---|---|---|
@@ -68,20 +80,20 @@ Docker 실행 명령은 `uvicorn app.main:app --port ${PORT:-8000}` 입니다. R
 | 사용자 | `GET·POST /watchlist`, `PATCH·DELETE /watchlist/{id}` | 사용자 | 관심 상품·목표가 |
 | | `GET /alerts`, `POST /alerts/read-all` | 사용자 | 알림 |
 | | `GET /deals/today` | 사용자 | 오늘의 적기 상품·7일 하락 상품 |
-| RPA | `GET /rpa/listings`, `POST /rpa/prices/bulk`, `PUT /rpa/public-prices`, `POST /rpa/models`, `POST /rpa/logs`, `POST /rpa/train`, `GET /rpa/reports/weekly` | `X-RPA-KEY` 헤더 | 수집기 전용 |
+| RPA | `GET /rpa/listings`, `POST /rpa/prices/bulk`, `PUT /rpa/public-prices`, `POST /rpa/models`, `POST /rpa/logs`, `POST /rpa/train`, `GET /rpa/reports/weekly` | `X-RPA-KEY` 헤더 | 수집기 전용. `prices/bulk`는 같은 판매처에 같은 시간대(정시~59분) 가격이 이미 있으면 건너뛰고 `duplicate`로 셈 — EC2·Actions 두 수집기가 같은 TiDB에 보내도 중복 저장 안 됨 |
 | 관리자 | `GET /admin/rpa-logs`, `GET /admin/ai-metrics` | ADMIN | 수집 현황, AI 사용 지표 |
 
-오류 응답은 모두 `{"code": "...", "message": "..."}` 형식입니다([`errors.py`](../backend/app/errors.py)).
+오류 응답은 모두 `{"code": "...", "message": "..."}` 형식입니다([`errors.py`](../../backend/app/errors.py)).
 
 ## 5. 적기 판정과 AI
 
-- **판정**([`services/timing.py`](../backend/app/services/timing.py)): 쇼핑몰별 일별 최저 실구매가 → 90일 가격 위치, 30일 추세, 할인 주기 등 피처 8종 → RandomForest의 "7일 안에 5% 이상 하락할 확률" → 0~100점과 라벨. 결과는 2시간 동안 `timing_predictions`에 캐시됩니다.
-- **학습**([`ml/train.py`](../backend/app/ml/train.py)): TimeSeriesSplit 5분할로 F1을 계산해 기존 모델보다 같거나 좋을 때만 교체. 데이터가 100행 미만이면 건너뜁니다.
-- **Gemini**([`ai/gemini.py`](../backend/app/ai/gemini.py)): 분석 수치를 문자열로 넘기고, 응답 속 숫자가 입력에 없으면 1회 재요청, 그래도 실패하거나 키가 없으면 템플릿 문장으로 대체합니다. 키는 서버에만 있고 브라우저는 Gemini를 직접 호출하지 않습니다.
+- **판정**([`services/timing.py`](../../backend/app/services/timing.py)): 쇼핑몰별 일별 최저 실구매가 → 90일 가격 위치, 30일 추세, 할인 주기 등 피처 8종 → RandomForest의 "7일 안에 5% 이상 하락할 확률" → 0~100점과 라벨. 결과는 2시간 동안 `timing_predictions`에 캐시됩니다.
+- **학습**([`ml/train.py`](../../backend/app/ml/train.py)): TimeSeriesSplit 5분할로 F1을 계산해 기존 모델보다 같거나 좋을 때만 교체. 데이터가 100행 미만이면 건너뜁니다.
+- **Gemini**([`ai/gemini.py`](../../backend/app/ai/gemini.py)): 분석 수치를 문자열로 넘기고, 응답 속 숫자가 입력에 없으면 1회 재요청, 그래도 실패하거나 키가 없으면 템플릿 문장으로 대체합니다. 키는 서버에만 있고 브라우저는 Gemini를 직접 호출하지 않습니다.
 
 ## 6. 시드 데이터 (`python -m app.seed`)
 
-[`seed.py`](../backend/app/seed.py): 시연 쇼핑몰 3곳(`*.example.com`), 상품 12종, 가격 이력 120일, 데모 계정 2개, 초기 모델 학습.
+[`seed.py`](../../backend/app/seed.py): 시연 쇼핑몰 3곳(`*.example.com`), 상품 12종, 가격 이력 120일, 데모 계정 2개, 초기 모델 학습.
 
 - 데이터가 이미 있으면 아무것도 하지 않습니다(운영 DB에 다시 실행해도 안전).
 - 계정: `demo@buytiming.demo`, `admin@buytiming.demo` — 비밀번호는 `SEED_DEMO_PASSWORD` / `SEED_ADMIN_PASSWORD`, 없으면 무작위 생성 후 화면에 출력.
@@ -89,7 +101,7 @@ Docker 실행 명령은 `uvicorn app.main:app --port ${PORT:-8000}` 입니다. R
 
 ## 7. 테스트
 
-- `cd backend && pytest -q` → 24건. 기본은 임시 SQLite, `TEST_DATABASE_URL`을 주면 그 DB로 실행(CI는 MySQL 8).
+- `cd backend && pytest -q` → 29건(프런트엔드 서빙 포함, `FRONTEND_DIR`을 켠 상태로 실행). 기본은 임시 SQLite, `TEST_DATABASE_URL`을 주면 그 DB로 실행(CI는 MySQL 8).
 - 테스트는 시작할 때 `seed(reset=True)`로 **DB를 비웁니다**. `TEST_DATABASE_URL`에 TiDB 운영 주소를 넣지 않습니다.
 
 다음 문서: [03. 프런트엔드](03-frontend.md)

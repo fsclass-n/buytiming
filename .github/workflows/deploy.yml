@@ -3,13 +3,15 @@ name: Deploy
 # main에 push되면 CI 전체를 통과한 뒤, "바뀐 폴더"에 해당하는 대상에만 배포한다.
 #
 #   바뀐 경로                         Netlify   Render   EC2(full)   EC2(rpa-only)
-#   frontend/                          O         -        O           -
+#   frontend/                          O         O        O           -
 #   netlify.toml                       O         -        -           -
 #   backend/                           -         O        O (api)     -
-#   render.yaml                        -         O        -           -
+#   render.yaml, .dockerignore         -         O        -           -
 #   rpa/                               -         -        O (rpa)     O
 #   docker-compose.yml, deploy/        -         -        O           O(compose만)
 #
+#   Netlify       : 프런트엔드 전용(데모 모드)
+#   Render        : 단독 풀스택(API + 프런트엔드, backend/Dockerfile.render). 가격 수집은 collect-render.yml
 #   EC2(full)     : EC2에서 nginx + api + rpa 전체 스택 운영 (기본값)
 #   EC2(rpa-only) : API는 Render, EC2는 RPA 수집기만 운영  → Variable EC2_MODE=rpa-only
 #   비교 기준 커밋이 없으면(첫 push, 강제 push) 모든 대상에 배포한다.

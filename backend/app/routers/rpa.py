@@ -1,6 +1,7 @@
 """RPA 수신 API (X-RPA-KEY 인증) — 수집기·스케줄러 전용"""
 import base64
 import logging
+from datetime import timedelta
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Response
@@ -38,23 +39,36 @@ def listings(db: Session = Depends(get_db)):
 
 @router.post("/prices/bulk")
 def prices_bulk(body: PriceBulkIn, db: Session = Depends(get_db)):
-    """가격 일괄 등록 → 판정 갱신(사전 계산) → 목표가·판정 변경 알림"""
+    """가격 일괄 등록 → 판정 갱신(사전 계산) → 목표가·판정 변경 알림
+
+    같은 판매처에 같은 시간대(정시~59분) 가격이 이미 있으면 건너뛴다.
+    EC2 수집기와 GitHub Actions(Render용) 수집기가 같은 DB에 보내도 중복 저장되지 않는다.
+    """
     at = body.collected_at or now_local()
     if at.tzinfo is not None:
         at = at.astimezone(ZoneInfo(get_settings().tz)).replace(tzinfo=None)
-    valid = {lid: pid for lid, pid in db.execute(select(ProductListing.id, ProductListing.product_id)
-                                                 .where(ProductListing.id.in_([i.listing_id for i in body.items])))}
+    ids = [i.listing_id for i in body.items]
+    valid = {lid: pid for lid, pid in db.execute(select(ProductListing.id, ProductListing.product_id).where(ProductListing.id.in_(ids)))}
+    hour = at.replace(minute=0, second=0, microsecond=0)
+    seen = set(db.execute(select(PriceHistory.listing_id).where(
+        PriceHistory.listing_id.in_(ids), PriceHistory.collected_at >= hour, PriceHistory.collected_at < hour + timedelta(hours=1))).scalars())
     touched: set[int] = set()
+    inserted = duplicate = 0
     for i in body.items:
         if i.listing_id not in valid:
             continue
+        if i.listing_id in seen:
+            duplicate += 1
+            continue
+        seen.add(i.listing_id)
         db.add(PriceHistory(listing_id=i.listing_id, price=i.price, shipping_fee=i.shipping_fee,
                             total_price=i.price + i.shipping_fee, in_stock=i.in_stock, collected_at=at))
         touched.add(valid[i.listing_id])
+        inserted += 1
     db.flush()
     alerts = sum(refresh_product(db, db.get(Product, pid)) for pid in touched)
     db.commit()
-    return {"inserted": sum(i.listing_id in valid for i in body.items), "skipped": sum(i.listing_id not in valid for i in body.items),
+    return {"inserted": inserted, "skipped": sum(i.listing_id not in valid for i in body.items), "duplicate": duplicate,
             "products_updated": len(touched), "alerts_created": alerts}
 
 

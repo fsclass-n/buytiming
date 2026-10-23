@@ -14,6 +14,8 @@ os.environ.update({
     "SEED_DEMO_PASSWORD": "demo-pass-1",
     "SEED_ADMIN_PASSWORD": "admin-pass-1",
     "APP_ENV": "test",
+    # Render 단독 풀스택 구성(프런트엔드 동시 서빙)으로 전체 테스트를 실행한다
+    "FRONTEND_DIR": str(pathlib.Path(__file__).resolve().parents[2] / "frontend"),
 })
 
 from fastapi.testclient import TestClient  # noqa: E402

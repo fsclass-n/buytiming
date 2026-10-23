@@ -7,13 +7,13 @@ RPA가 쇼핑몰 가격과 공공 가격 데이터를 1시간마다 모아 실�
 
 | 구분 | 기술 |
 |---|---|
-| Frontend | HTML5, CSS3, Vanilla JavaScript(ES Modules), Bootstrap 5, Flexbox, Plotly.js — **Netlify** |
+| Frontend | HTML5, CSS3, Vanilla JavaScript(ES Modules), Bootstrap 5, Flexbox, Plotly.js — **Netlify(데모 모드)**, Render·EC2(실서비스) |
 | Backend | Python 3.11 · FastAPI · SQLAlchemy — **Render / AWS EC2 (Docker)** |
-| Database | MySQL 8.x(개발·EC2) / TiDB Cloud(운영) / SQLite(로컬 빠른 실행·테스트) |
+| Database | TiDB Cloud(운영, Render·EC2 공유) / MySQL 8.x(개발·CI) / SQLite(로컬 빠른 실행·테스트) |
 | AI | Google Gemini(gemini-2.5-flash, JSON 구조화 출력 + 숫자 대조 검증), scikit-learn RandomForest |
 | RPA / Data | Python 3.11.9 · Requests · BeautifulSoup4 · pandas · NumPy · Seaborn · Matplotlib |
 | External | 공공데이터 API(한국소비자원 참가격) |
-| CI/CD | GitHub Actions(`ci.yml`, `deploy.yml`), Render Deploy Hook, EC2 SSH 배포, Netlify |
+| CI/CD | GitHub Actions(`ci.yml`, `deploy.yml`, `collect-render.yml`), Render Deploy Hook, EC2 SSH 배포, Netlify |
 
 ## 실행계획 단계와 구현 대응
 
@@ -21,13 +21,13 @@ RPA가 쇼핑몰 가격과 공공 가격 데이터를 1시간마다 모아 실�
 |---|---|
 | 설계 | `backend/app/models.py`(테이블 12개), `frontend/*.html`(화면 10개), `backend/app/routers`(API 22개 + RPA 보조 3개) |
 | 구현 | 프런트엔드·백엔드·Gemini 연동·RPA 수집기, 판정 모델(`app/ml`), 주간 리포트(`app/jobs`) |
-| 배포 | Dockerfile·docker-compose·nginx·render.yaml·netlify.toml, GitHub Actions CI/CD, 테스트 31건 |
+| 배포 | Dockerfile·docker-compose·nginx·render.yaml·netlify.toml, GitHub Actions CI/CD, 테스트 36건 |
 
 ## 폴더 구조
 
 ```
 buytiming/
-├── frontend/              # Netlify 정적 사이트 (데모 모드 내장)
+├── frontend/              # 정적 사이트 (Netlify=데모 모드, Render·EC2=같은 도메인 API 연동)
 │   ├── *.html             # 홈·로그인·회원가입·검색·상세·AI 상담·관심 상품·알림·관리자 2종
 │   ├── js/api.js          # REST 클라이언트 (API_BASE_URL 없으면 mock.js로 데모 모드)
 │   ├── js/mock.js         # 백엔드와 같은 응답 형식의 브라우저 목업 API
@@ -37,18 +37,22 @@ buytiming/
 │   ├── app/ai/gemini.py   # 프롬프트·구조화 출력·숫자 검증·재요청·템플릿 대체
 │   ├── app/ml/            # 피처 8종, 학습(TimeSeriesSplit), 모델 저장(DB)
 │   ├── app/seed.py        # 시연 데이터(쇼핑몰 3곳·상품 12종·120일)
-│   ├── tests/             # pytest 24건
-│   ├── Dockerfile · requirements.txt · requirements-dev.txt
-├── rpa/                   # 수집기 (EC2 컨테이너 스케줄러 또는 cron)
+│   ├── tests/             # pytest 29건
+│   ├── Dockerfile         # EC2·CI용 API 이미지
+│   ├── Dockerfile.render  # Render용 풀스택 이미지(API + frontend, 컨텍스트 = 저장소 루트)
+│   ├── requirements.txt · requirements-dev.txt
+├── rpa/                   # 수집기 (EC2 컨테이너 스케줄러 / Render용은 GitHub Actions 예약 실행)
 │   ├── collector/         # http(robots.txt·간격·재시도), parsers, jobs, scheduler
 │   ├── malls.json         # 쇼핑몰별 CSS 셀렉터 (약관상 허용된 곳만)
 │   ├── tests/             # pytest 7건
 │   └── Dockerfile · requirements.txt
 ├── deploy/                # nginx.conf, EC2 설정 스크립트
 ├── docker-compose.yml     # EC2: web(nginx) + api + rpa [+ mysql]
-├── render.yaml            # Render Blueprint
-├── netlify.toml           # Netlify (base=frontend)
-├── .github/workflows/     # ci.yml, deploy.yml
+├── render.yaml            # Render Blueprint (단독 풀스택)
+├── .dockerignore          # Render 빌드(저장소 루트 컨텍스트)용
+├── netlify.toml           # Netlify (base=frontend, 데모 모드)
+├── .github/workflows/     # ci.yml, deploy.yml, collect-render.yml
+├── docs/md/               # 단계별 배포 문서 (docs/md/README.md부터)
 ├── .env.example           # 환경 변수 예시 (.env는 Git 제외)
 └── ruff.toml
 ```
@@ -87,42 +91,44 @@ python -m collector.scheduler     # 스케줄 상주 실행
 테스트·린트:
 
 ```bash
-cd backend && pytest -q           # 24 passed
+cd backend && pytest -q           # 29 passed
 cd rpa && pytest -q               # 7 passed
 ruff check backend rpa
 ```
 
-## 2. Netlify — 프런트엔드
+> 운영 구성: **Netlify = 프런트엔드 데모**, **Render·EC2 = 각각 독립된 풀스택**, **DB = TiDB 하나를 Render·EC2가 공유**.
+> 단계별 상세 절차는 [`docs/md/README.md`](docs/md/README.md)를 따릅니다.
+
+## 2. Netlify — 프런트엔드 (데모 모드)
 
 1. Netlify에서 이 저장소를 연결하면 루트의 `netlify.toml`을 읽어 `frontend/`를 배포합니다.
-2. **API 없이 배포하면 데모 모드**(브라우저 목업 API)로 모든 화면이 동작합니다.
-3. 백엔드 배포 후 Site settings → Environment variables에 `API_BASE_URL=https://<서비스>.onrender.com` (또는 EC2 주소)을 넣고 재배포합니다.
-4. 백엔드의 `ALLOWED_ORIGINS`에 Netlify 사이트 주소를 추가합니다.
+2. `API_BASE_URL`을 등록하지 않으므로 **데모 모드**(브라우저 목업 API)로 모든 화면이 동작합니다. 서버·DB와 연결하지 않습니다.
 
-## 3. Render — 백엔드 API
+## 3. Render — 단독 풀스택 (API + 프런트엔드)
 
-1. TiDB Cloud Serverless에서 `buytiming` DB를 만들고 접속 문자열을 준비합니다.
-   `DATABASE_URL=mysql+pymysql://<USER>:<PASSWORD>@<HOST>:4000/buytiming`
-2. Render → New → Blueprint로 저장소를 연결하면 `render.yaml`대로 Docker 웹 서비스가 생성됩니다.
-   `DATABASE_URL`, `RPA_API_KEY`, `GEMINI_API_KEY`, `ALLOWED_ORIGINS`, `ADMIN_EMAILS`를 입력합니다(`JWT_SECRET`은 자동 생성).
-3. 최초 1회 Render Shell에서 `python -m app.seed` 실행(시연 데이터가 필요할 때).
-4. 서비스 Settings → Deploy Hook URL을 GitHub secret `RENDER_DEPLOY_HOOK_URL`에 등록하면 CI 통과 후 자동 배포됩니다.
+1. TiDB Cloud에서 `buytiming` DB를 만들고 접속 문자열을 준비합니다.
+   `DATABASE_URL=mysql+pymysql://<USER>:<PASSWORD>@<HOST>:4000/buytiming?charset=utf8mb4`, `DB_SSL_CA=/etc/ssl/certs/ca-certificates.crt`
+2. Render 웹 서비스(Docker): Dockerfile Path `./backend/Dockerfile.render`, Build Context `.`, Health Check `/health` (`render.yaml`과 동일).
+   필수 환경 변수: `APP_ENV=production`, `DATABASE_URL`, `DB_SSL_CA`, `JWT_SECRET`, `RPA_API_KEY`, `ALLOWED_ORIGINS=https://buytiming.onrender.com`.
+3. 무료 플랜은 셸이 없으므로 시연 데이터는 EC2(`docker compose exec api python -m app.seed`)나 PC에서 TiDB로 넣습니다.
+4. 가격 수집은 GitHub Actions `collect-render.yml`이 매시 실행합니다(Variable `RENDER_URL`, Secret `RENDER_RPA_API_KEY`).
+5. Settings → Auto-Deploy Off, Deploy Hook URL을 GitHub secret `RENDER_DEPLOY_HOOK_URL`에 등록하면 CI 통과 후 자동 배포됩니다.
 
-## 4. AWS EC2 — 전체 스택(nginx + API + RPA) 또는 RPA 전용
+## 4. AWS EC2 — 단독 풀스택(nginx + API + RPA)
 
 ```bash
 # EC2(Ubuntu)에서
 bash deploy/ec2-setup.sh https://github.com/<조 Organization>/buytiming.git   # Docker 설치 → 재접속 후 다시 실행
-vi ~/buytiming/.env                                                       # 운영 값 입력 (APP_ENV=production)
-cd ~/buytiming && docker compose up -d --build                            # http://<EC2 공인 IP>
+vi ~/buytiming/.env                                                       # 운영 값 입력 (최소 9줄: docs/md/08-deploy-ec2.md)
+cd ~/buytiming && docker compose up -d --build                            # http://buytiming.duckdns.org
 docker compose exec api python -m app.seed                                # (선택) 시연 데이터
 ```
 
-- 같은 EC2의 MySQL을 쓰려면 `docker compose --profile localdb up -d --build`와
+- EC2 `.env`는 TiDB 접속 값과 함께 `RPA_TARGET_API=http://api:8000`, `MYSQL_PASSWORD`·`MYSQL_ROOT_PASSWORD`(placeholder)가 필요합니다.
+- 두 수집기(EC2 rpa, Render용 Actions)가 같은 TiDB에 보내도 API가 같은 판매처·같은 시간대 가격은 한 번만 저장합니다.
+- 로컬에서 MySQL 8로 전체 스택을 돌리려면 `docker compose --profile localdb up -d --build`와
   `DATABASE_URL=mysql+pymysql://buytiming:<MYSQL_PASSWORD>@mysql:3306/buytiming`을 사용합니다.
-- **Render API + EC2 RPA 조합**: `.env`에 `RPA_TARGET_API=https://<서비스>.onrender.com`를 넣고
-  `docker compose up -d --build --no-deps rpa`로 수집기만 실행합니다.
-- 보안 그룹은 80(HTTP)과 22(SSH, 관리자 IP만)만 엽니다. HTTPS는 도메인 연결 후 ALB 또는 certbot으로 구성합니다.
+- 보안 그룹은 80(HTTP)과 22(SSH)를 엽니다. GitHub Actions가 SSH로 배포하므로 22번 접근 범위는 `docs/md/10-github-actions-setup.md`를 참고합니다.
 
 ## 5. GitHub Actions CI/CD
 
@@ -130,15 +136,16 @@ docker compose exec api python -m app.seed                                # (선
 |---|---|---|
 | `ci.yml` | `main` 외 브랜치 push, PR | ruff, pytest(SQLite), pytest(MySQL 8 서비스 컨테이너), RPA 테스트, JS 문법·build.sh 검사, Docker 빌드·헬스 체크, compose 검증 |
 | `deploy.yml` | `main` push, 수동 | CI 재사용(중복 실행 없음) → **바뀐 폴더에 해당하는 대상만** Render · EC2 · Netlify 배포 |
+| `collect-render.yml` | 매시 07분, 수동 | Render용 가격 수집(KST 03시 재학습, 06시 참가격, 월 07시 리포트 포함) |
 
 바뀐 폴더별 배포 대상 (`.github/scripts/detect-changes.sh`):
 
 | 바뀐 경로 | Netlify | Render | EC2 (full) | EC2 (rpa-only) |
 |---|:---:|:---:|:---:|:---:|
-| `frontend/` | ✅ | – | ✅ (git pull로 반영) | – |
+| `frontend/` | ✅ | ✅ | ✅ (git pull로 반영) | – |
 | `netlify.toml` | ✅ | – | – | – |
 | `backend/` | – | ✅ | ✅ (api만 재빌드) | – |
-| `render.yaml` | – | ✅ | – | – |
+| `render.yaml`, `.dockerignore` | – | ✅ | – | – |
 | `rpa/` | – | – | ✅ (rpa만 재빌드) | ✅ |
 | `docker-compose.yml` | – | – | ✅ (전체) | ✅ |
 | `deploy/` | – | – | ✅ (nginx 재시작) | – |
@@ -154,12 +161,13 @@ docker compose exec api python -m app.seed                                # (선
 | 종류 | 이름 | 설명 |
 |---|---|---|
 | Secret | `RENDER_DEPLOY_HOOK_URL` | Render 서비스의 Deploy Hook |
+| Secret | `RENDER_RPA_API_KEY` | Render의 `RPA_API_KEY`와 같은 값 (Render 가격 수집) |
 | Secret | `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY` | EC2 주소, 접속 사용자(ubuntu), 개인 키(PEM 전체) |
 | Secret | `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID` | (선택) Git 연동 대신 Actions로 Netlify 배포 |
-| Variable | `RENDER_HEALTH_URL` | 예: `https://buytiming-api.onrender.com/health` |
+| Variable | `RENDER_HEALTH_URL` | `https://buytiming.onrender.com/health` |
+| Variable | `RENDER_URL` | `https://buytiming.onrender.com` (Render 가격 수집 대상) |
 | Variable | `EC2_APP_DIR` | 기본 `~/buytiming` |
 | Variable | `EC2_MODE` | `full`(기본) 또는 `rpa-only` |
-| Variable | `API_BASE_URL` | Netlify 프런트엔드가 호출할 API 주소 |
 
 등록하지 않은 대상은 자동으로 건너뜁니다.
 

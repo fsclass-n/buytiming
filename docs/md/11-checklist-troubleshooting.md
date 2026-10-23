@@ -7,32 +7,33 @@
 - [ ] 접속 문자열 확보(비밀번호 URL 인코딩), 허용 IP(EC2, Render, 개발 PC) 설정
 - [ ] 시드 데이터 1회 입력(EC2 또는 PC), 데모·관리자 비밀번호 보관
 
-### Render (07)
+### Render — 단독 풀스택 (07)
 - [ ] 서비스 이름 `buytiming`, Docker, Singapore, Free, Health Check `/health`
-- [ ] 환경 변수 10개 입력 (`APP_ENV`, `DATABASE_URL`, `DB_SSL_CA`, `JWT_SECRET`, `RPA_API_KEY`, `GEMINI_*`, `AI_DAILY_LIMIT`, `ALLOWED_ORIGINS`, `ADMIN_EMAILS`)
+- [ ] Dockerfile Path `./backend/Dockerfile.render`, Build Context `.`
+- [ ] 필수 환경 변수 6개 (`APP_ENV`, `DATABASE_URL`, `DB_SSL_CA`, `JWT_SECRET`, `RPA_API_KEY`, `ALLOWED_ORIGINS=https://buytiming.onrender.com`)
 - [ ] Auto-Deploy **Off**
-- [ ] https://buytiming.onrender.com/health → `"status":"ok"`, `"env":"production"`
+- [ ] `/health` → `"status":"ok"`, `/` → 홈 화면, `/js/config.js` → `API_BASE_URL: "/"`
 
-### EC2 (08)
+### EC2 — 단독 풀스택 (08)
 - [ ] Elastic IP 연결, DuckDNS가 Elastic IP를 가리킴
 - [ ] 보안 그룹 80 개방, 22번은 GitHub Actions 접속 가능하게(10)
-- [ ] `.env`: `APP_ENV=production`, TiDB 접속 값, `RPA_TARGET_API=http://api:8000`, `MYSQL_*` placeholder, `chmod 600`
+- [ ] `.env` 최소 9줄: `APP_ENV=production`, TiDB 접속 값, `JWT_SECRET`, `RPA_API_KEY`, `ALLOWED_ORIGINS=http://buytiming.duckdns.org`, `RPA_TARGET_API=http://api:8000`, `MYSQL_*` placeholder, `chmod 600`
 - [ ] `docker compose ps` → api healthy, rpa·web running
 - [ ] http://buytiming.duckdns.org/health → ok, 수동 `collect` 성공
 
-### Netlify (09)
-- [ ] `API_BASE_URL=https://buytiming.onrender.com` 등록 후 재배포
-- [ ] 데모 배너 사라짐, 실제 로그인·검색·상세 동작
+### Netlify — 데모 모드 (09)
+- [ ] 환경 변수 `API_BASE_URL` 없음, `/js/config.js` → `API_BASE_URL: ""`, 데모 배너 표시
 
 ### GitHub Actions (10)
-- [ ] Secrets: `RENDER_DEPLOY_HOOK_URL`, `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`
-- [ ] Variables: `RENDER_HEALTH_URL` (필요 시 `EC2_APP_DIR`, `EC2_MODE=full`)
+- [ ] Secrets: `RENDER_DEPLOY_HOOK_URL`, `RENDER_RPA_API_KEY`, `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`
+- [ ] Variables: `RENDER_HEALTH_URL`, `RENDER_URL` (필요 시 `EC2_APP_DIR`, `EC2_MODE=full`)
 - [ ] Git 연동이면 `NETLIFY_*` Secret 미등록
-- [ ] Deploy 워크플로 수동 실행 성공
+- [ ] Deploy 워크플로 수동 실행 성공, Collect (Render) 수동 실행 성공
 
-### 데이터 흐름 최종 확인
-- [ ] 매시 정각 이후 관리자 화면에 `collect_prices` SUCCESS 로그 추가
-- [ ] Netlify(=Render API)와 duckdns(=EC2 API) 화면에서 같은 상품·같은 최신 가격이 보임 (같은 TiDB 공유 확인)
+### 독립 동작·데이터 흐름 최종 확인
+- [ ] 매시 이후 관리자 화면에 `collect_prices` 로그가 두 곳(EC2 정각, Actions 07분)에서 추가 — 나중 쪽은 저장 0건일 수 있음(중복 방지, 정상)
+- [ ] Render와 duckdns 화면에서 같은 계정으로 로그인되고 같은 상품·같은 최신 가격이 보임 (같은 TiDB 공유)
+- [ ] EC2를 잠시 멈춰도 Render 화면·API·Actions 수집이 계속 동작 (반대도 동일)
 
 ## 2. 자주 나는 문제
 
@@ -44,9 +45,13 @@
 | `(1049, "Unknown database 'buytiming'")` | api 로그 | TiDB에서 `CREATE DATABASE buytiming;` |
 | `Can't connect to MySQL server ... timed out` | api 로그 | TiDB 허용 IP 목록에 Render/EC2 IP 없음 |
 | `Lost connection to MySQL server during query` (가끔) | api 로그 | TiDB Starter 유휴 연결 정리 — `pool_pre_ping`·`pool_recycle`로 자동 재연결됨. 반복되면 보고 |
-| 화면: "API 서버에 연결할 수 없습니다" + 콘솔 `CORS` | 브라우저 F12 콘솔 | Render `ALLOWED_ORIGINS`에 `https://buytiming.netlify.app` 정확히 입력(끝 `/` 없이) |
-| Netlify가 계속 데모 모드 | `/js/config.js` 내용 | 환경 변수 등록 후 재배포 안 함, 또는 수동 업로드 사이트(09 문서 1단계) |
-| Netlify 첫 화면이 1분 가까이 멈춤 | — | Render 무료 플랜이 잠들었다 깨는 중. 정상 |
+| Render `/`가 화면 대신 `{"service":"BuyTiming API",...}` JSON | Render Settings | Dockerfile Path가 `./backend/Dockerfile`(API 전용)로 되어 있음 → `./backend/Dockerfile.render`, Build Context `.` |
+| Render 화면이 "데모 모드" 배너로 뜸 | `/js/config.js` | 위와 같은 원인(예전 이미지). 설정 변경 후 재배포 |
+| 화면: "API 서버에 연결할 수 없습니다" | 브라우저 F12 콘솔·Network | 같은 도메인 호출이라 CORS 문제는 아님 → `/health` 응답과 서버 로그 확인 |
+| Render 첫 화면이 1분 가까이 멈춤 | — | 무료 플랜이 잠들었다 깨는 중. 정상 |
+| Netlify가 실제 데이터를 안 보여 줌 | — | 의도된 동작(데모 모드 유지, 09 문서) |
+| Collect (Render) 실패: `401 INVALID_RPA_KEY` | Actions 로그 | Secret `RENDER_RPA_API_KEY` ≠ Render `RPA_API_KEY` |
+| 수집 결과 `inserted: 0, duplicate: N` | — | 같은 시간대에 다른 수집기(EC2/Actions)가 먼저 저장함. 정상 |
 | `docker compose up`: `required variable MYSQL_PASSWORD is missing a value` | EC2 터미널 | `.env`에 `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` placeholder 입력 |
 | rpa 로그: `Connection refused ... localhost:8000` | `docker compose logs rpa` | `.env`의 `RPA_TARGET_API`를 `http://api:8000`으로 |
 | rpa 로그: `401 ... INVALID_RPA_KEY` | `docker compose logs rpa` | api와 rpa가 읽는 `RPA_API_KEY`가 다름 → `.env` 하나만 쓰므로 값 확인 후 `docker compose up -d` |
@@ -59,7 +64,8 @@
 
 | 대상 | 방법 |
 |---|---|
-| Netlify | Deploys에서 이전 배포 선택 → **Publish deploy**, 또는 `API_BASE_URL` 삭제 후 재배포(데모 모드) |
+| Netlify | Deploys에서 이전 배포 선택 → **Publish deploy** |
+| Render 가격 수집 | Actions → Collect (Render) → ··· → **Disable workflow** (EC2 수집은 계속됨) |
 | Render | Events/Deploys에서 이전 배포 **Rollback**(무료 플랜은 최근 2개까지) |
 | EC2 | `git log`로 이전 커밋 확인 → 문제 커밋을 GitHub에서 revert해 `main`에 push(자동 재배포). 서버에서 직접 checkout하지 않음 |
 | DB | TiDB Starter의 백업·복원 기능 확인. 시드/테스트를 운영 DB에 실행하지 않는 것이 최선 |
@@ -67,7 +73,8 @@
 ## 4. 보안 마무리
 
 - `.env`, `.pem`, Deploy Hook URL, TiDB 비밀번호는 Git·메신저 공개 채널에 올리지 않습니다.
-- 값이 노출되면: TiDB 비밀번호 Reset, Render Deploy Hook Regenerate, `JWT_SECRET`·`RPA_API_KEY` 교체(Render와 EC2 동시), EC2 키 페어 교체.
+- 값이 노출되면: TiDB 비밀번호 Reset(Render·EC2 둘 다 갱신), Render Deploy Hook Regenerate, 노출된 쪽 `JWT_SECRET`·`RPA_API_KEY` 교체
+  (Render의 `RPA_API_KEY`를 바꾸면 GitHub Secret `RENDER_RPA_API_KEY`도 같이), EC2 키 페어 교체.
 - 운영 데이터가 들어간 뒤에는 `python -m app.seed --reset`, `pytest`를 TiDB 주소로 실행하지 않습니다.
 
 처음으로: [문서 목록](README.md)
