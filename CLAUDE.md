@@ -20,7 +20,7 @@ Final-Project 3조 팀 저장소이며 `main`에 push하면 **실제 운영 환�
 | `docker-compose.yml` | EC2 전체 스택(web + api + rpa [+ mysql]) | EC2 전체 재빌드 |
 | `deploy/` | nginx.conf, EC2 설정 스크립트 | EC2(nginx 재시작) |
 | `.github/` | CI(`ci.yml`), 배포(`deploy.yml`, `scripts/detect-changes.sh`) | 배포 없음(파이프라인 자체 변경) |
-| `.claude/`, `CLAUDE.md`, `README.md` | Claude 설정·문서 | **배포 없음** |
+| `.claude/`, `CLAUDE.md`, `README.md`, `docs/` | Claude 설정·문서 (배포 절차는 `docs/README.md`) | **배포 없음** |
 
 ## 3. 자주 쓰는 명령
 
