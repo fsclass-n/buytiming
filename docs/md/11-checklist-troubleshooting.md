@@ -17,7 +17,7 @@
 ### EC2 — 단독 풀스택 (08)
 - [ ] Elastic IP 연결, DuckDNS가 Elastic IP를 가리킴
 - [ ] 보안 그룹 80 개방, 22번은 GitHub Actions 접속 가능하게(10)
-- [ ] `.env` 최소 9줄: `APP_ENV=production`, TiDB 접속 값, `JWT_SECRET`, `RPA_API_KEY`, `ALLOWED_ORIGINS=http://buytiming.duckdns.org`, `RPA_TARGET_API=http://api:8000`, `MYSQL_*` placeholder, `chmod 600`
+- [ ] `.env` [필수] 6개: `APP_ENV=production`, TiDB `DATABASE_URL`·`DB_SSL_CA`, `JWT_SECRET`, `RPA_API_KEY`, `ALLOWED_ORIGINS=http://buytiming.duckdns.org` / `RPA_TARGET_API` 없음, `MYSQL_*` 예시 값 유지, `chmod 600`
 - [ ] `docker compose ps` → api healthy, rpa·web running
 - [ ] http://buytiming.duckdns.org/health → ok, 수동 `collect` 성공
 

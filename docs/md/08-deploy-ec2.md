@@ -61,35 +61,26 @@ bash ~/buytiming/deploy/ec2-setup.sh https://github.com/fsclass-n/buytiming.git
 
 ## 6. `~/buytiming/.env` 작성 (가장 중요)
 
-`ec2-setup.sh`가 복사한 `.env`(예시 파일)는 로컬 개발용 항목까지 있어 복잡합니다. **아래 최소 버전으로 통째로 바꿉니다.**
+`ec2-setup.sh`가 [`.env.example`](../../.env.example)을 `.env`로 복사해 둡니다. 맨 위 **[필수] 6개만** 운영 값으로 바꾸면 됩니다.
 
 ```bash
-nano ~/buytiming/.env      # 기존 내용을 모두 지우고 아래를 붙여 넣은 뒤 < > 부분만 바꿈
+nano ~/buytiming/.env
 chmod 600 ~/buytiming/.env
 ```
 
-```dotenv
-APP_ENV=production
-DATABASE_URL=mysql+pymysql://<TiDB USER>:<URL 인코딩한 비밀번호>@<TiDB HOST>:4000/buytiming?charset=utf8mb4
-DB_SSL_CA=/etc/ssl/certs/ca-certificates.crt
-JWT_SECRET=<무작위 긴 문자열>
-RPA_API_KEY=<무작위 긴 문자열>
-ALLOWED_ORIGINS=http://buytiming.duckdns.org
-RPA_TARGET_API=http://api:8000
-MYSQL_PASSWORD=unused
-MYSQL_ROOT_PASSWORD=unused
-```
+| 항목 | EC2 값 | 비고 |
+|---|---|---|
+| `APP_ENV` | `production` | |
+| `DATABASE_URL` | `mysql+pymysql://<TiDB USER>:<URL 인코딩한 비밀번호>@<TiDB HOST>:4000/buytiming?charset=utf8mb4` | Render와 **같은 값**(같은 TiDB 공유) |
+| `DB_SSL_CA` | `/etc/ssl/certs/ca-certificates.crt` | Render와 같은 값 |
+| `JWT_SECRET` | 무작위 긴 문자열 | EC2 전용 값. Render와 **달라도 됨** |
+| `RPA_API_KEY` | 무작위 긴 문자열 | EC2 전용 값. 같은 `.env`를 api·rpa가 함께 읽으므로 자동으로 일치 |
+| `ALLOWED_ORIGINS` | `http://buytiming.duckdns.org` | 화면과 API가 같은 도메인이라 자기 주소만 허용 |
 
-선택 항목(필요할 때만 추가): `GEMINI_API_KEY=<키>`, `ADMIN_EMAILS=<이메일>`, `KCA_API_URL`·`DATA_GO_KR_KEY`(참가격), `SEED_DEMO_PASSWORD`·`SEED_ADMIN_PASSWORD`.
-나머지(`GEMINI_MODEL`, `AI_DAILY_LIMIT`, `JWT_EXPIRE_MINUTES`, `TZ`, `REQUEST_INTERVAL_SEC`, `SIMULATE_MALLS`)는 기본값이 있어 넣지 않아도 됩니다.
-
-| 항목 | 이유 |
-|---|---|
-| `DATABASE_URL`, `DB_SSL_CA` | Render와 **같은 값**(같은 TiDB 공유) |
-| `JWT_SECRET`, `RPA_API_KEY` | EC2 전용 값. Render와 **달라도 됨**(독립 운영). `RPA_API_KEY`는 같은 `.env`를 api·rpa가 함께 읽으므로 자동으로 일치 |
-| `ALLOWED_ORIGINS` | 화면과 API가 같은 도메인이라 CORS가 필요 없으므로 자기 주소만 허용 |
-| `RPA_TARGET_API=http://api:8000` | 예시 파일의 `http://localhost:8000`이 남아 있으면 compose가 그 값을 우선 사용 → 수집기가 API에 연결 못 함 |
-| `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` | 로컬 MySQL은 쓰지 않지만, compose는 프로필과 관계없이 파일 전체의 `${VAR:?}`를 검사 → 비어 있으면 `docker compose up` 자체가 오류 |
+- 선택 항목: `GEMINI_API_KEY`, `ADMIN_EMAILS`, `KCA_API_URL`·`DATA_GO_KR_KEY`(참가격), `SEED_DEMO_PASSWORD`·`SEED_ADMIN_PASSWORD`
+- 그대로 둘 것
+  - `RPA_TARGET_API` — 예시 파일에서 주석 처리되어 있어 compose 기본값 `http://api:8000`이 쓰입니다. `http://localhost:8000`을 적으면 수집기가 API를 찾지 못합니다.
+  - `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` — TiDB를 쓰므로 사용되지 않지만, compose는 프로필과 관계없이 파일 전체의 `${VAR:?}`를 검사해 비어 있으면 `docker compose up` 자체가 오류이므로 예시 값을 남겨 둡니다.
 
 - 값에 `$`가 들어 있으면 compose가 변수로 해석합니다. 그런 값은 작은따옴표로 감쌉니다(`JWT_SECRET='ab$cd'`).
 

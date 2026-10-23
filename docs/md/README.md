@@ -59,9 +59,10 @@
 
 1. **`main`에 push하면 운영 배포**가 일어납니다. 바뀐 폴더에 해당하는 대상만 배포됩니다(05 참고). `frontend/`를 바꾸면 Render와 EC2가 함께 배포됩니다.
 2. **운영 DB는 하나(TiDB)** 입니다. 테스트(`pytest`)나 `python -m app.seed --reset`을 TiDB 주소로 실행하면 **운영 데이터가 모두 지워집니다**.
-3. EC2의 `.env`는 `.env.example`을 복사한 그대로 두면 **두 군데에서 실패**합니다(08 문서의 "반드시 고칠 값").
-   - `RPA_TARGET_API=http://localhost:8000` → 수집기가 API를 찾지 못함 → `http://api:8000`으로 변경
-   - `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`가 비어 있으면 `docker compose up` 자체가 실패 → 사용하지 않아도 아무 값이나 입력
+3. `.env`는 **로컬 PC와 EC2만** 읽습니다. Render는 대시보드 Environment, GitHub Actions는 Secrets/Variables를 씁니다.
+   [`.env.example`](../../.env.example) 맨 위 **[필수] 6개**가 Render 환경 변수와 같은 이름이며, EC2에서는 이 6개만 운영 값으로 바꾸면 됩니다.
+   - `RPA_TARGET_API`는 EC2 `.env`에 넣지 않습니다(`http://localhost:8000`을 넣으면 수집기가 API를 찾지 못함).
+   - `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`는 예시 값을 그대로 둡니다(비어 있으면 `docker compose up` 자체가 실패).
 4. Render 무료 플랜은 **셸(Shell) 접속이 안 됩니다**. 시드 데이터는 EC2나 로컬 PC에서 TiDB로 넣습니다.
 5. GitHub Actions가 EC2에 SSH로 접속하므로 **보안 그룹 22번 포트를 GitHub 러너가 접근할 수 있게** 열어야 합니다(10 참고).
 6. 공개 저장소의 예약 워크플로는 **저장소에 60일간 활동이 없으면 GitHub가 자동으로 멈춥니다**. 멈추면 Actions 화면에서 다시 켭니다.

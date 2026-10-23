@@ -119,12 +119,12 @@ ruff check backend rpa
 ```bash
 # EC2(Ubuntu)에서
 bash deploy/ec2-setup.sh https://github.com/<조 Organization>/buytiming.git   # Docker 설치 → 재접속 후 다시 실행
-vi ~/buytiming/.env                                                       # 운영 값 입력 (최소 9줄: docs/md/08-deploy-ec2.md)
+vi ~/buytiming/.env                                                       # 맨 위 [필수] 6개만 운영 값으로 (docs/md/08-deploy-ec2.md)
 cd ~/buytiming && docker compose up -d --build                            # http://buytiming.duckdns.org
 docker compose exec api python -m app.seed                                # (선택) 시연 데이터
 ```
 
-- EC2 `.env`는 TiDB 접속 값과 함께 `RPA_TARGET_API=http://api:8000`, `MYSQL_PASSWORD`·`MYSQL_ROOT_PASSWORD`(placeholder)가 필요합니다.
+- EC2 `.env`는 `.env.example`의 [필수] 6개(`APP_ENV`, `DATABASE_URL`, `DB_SSL_CA`, `JWT_SECRET`, `RPA_API_KEY`, `ALLOWED_ORIGINS`)만 바꾸면 됩니다. `RPA_TARGET_API`는 넣지 않고, `MYSQL_*` 예시 값은 그대로 둡니다.
 - 두 수집기(EC2 rpa, Render용 Actions)가 같은 TiDB에 보내도 API가 같은 판매처·같은 시간대 가격은 한 번만 저장합니다.
 - 로컬에서 MySQL 8로 전체 스택을 돌리려면 `docker compose --profile localdb up -d --build`와
   `DATABASE_URL=mysql+pymysql://buytiming:<MYSQL_PASSWORD>@mysql:3306/buytiming`을 사용합니다.
