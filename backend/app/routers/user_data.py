@@ -81,7 +81,8 @@ def read_all(db: Session = Depends(get_db), user: User = Depends(current_user)):
 
 
 @router.get("/deals/today")
-def deals_today(db: Session = Depends(get_db), _: User = Depends(current_user)):
+def deals_today(db: Session = Depends(get_db)):
+    """홈 화면용 공개 데이터(개인 정보 없음): 로그인 없이 조회"""
     products = db.execute(select(Product)).scalars().all()
     analyzed = [(p, cached_or_analyze(db, p)) for p in products]
     timing = sorted([(p, a) for p, a in analyzed if a["score"] is not None], key=lambda x: -x[1]["score"])[:6]

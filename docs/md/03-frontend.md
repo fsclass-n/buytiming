@@ -6,7 +6,7 @@
 
 | 파일 | 화면 | 스크립트 | 로그인 |
 |---|---|---|---|
-| `index.html` | 홈(오늘의 적기·하락 상품) | `js/pages/home.js` | 필요 |
+| `index.html` | 홈(오늘의 적기·하락 상품) | `js/pages/home.js` | **불필요** (로그인 시 알림 요약 추가) |
 | `login.html` / `signup.html` | 로그인 / 회원가입 | `login.js` / `signup.js` | 불필요 |
 | `search.html` | 상품 검색·URL 등록 | `search.js` | 필요 |
 | `product.html` | 상품 상세(가격 비교·차트·적기 판정·AI 조언) | `product.js` | 필요 |

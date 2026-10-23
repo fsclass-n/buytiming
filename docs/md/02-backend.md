@@ -80,7 +80,7 @@ Docker 실행 명령은 `uvicorn app.main:app --port ${PORT:-8000}` 입니다. R
 | | `POST /ai/chat` | 사용자 | 상품 질문 상담 (일일 한도) |
 | 사용자 | `GET·POST /watchlist`, `PATCH·DELETE /watchlist/{id}` | 사용자 | 관심 상품·목표가 |
 | | `GET /alerts`, `POST /alerts/read-all` | 사용자 | 알림 |
-| | `GET /deals/today` | 사용자 | 오늘의 적기 상품·7일 하락 상품 |
+| | `GET /deals/today` | **공개** | 오늘의 적기 상품·7일 하락 상품 (홈 화면, 개인 정보 없음) |
 | RPA | `GET /rpa/listings`, `POST /rpa/prices/bulk`, `PUT /rpa/public-prices`, `POST /rpa/models`, `POST /rpa/logs`, `POST /rpa/train`, `GET /rpa/reports/weekly` | `X-RPA-KEY` 헤더 | 수집기 전용. `prices/bulk`는 같은 판매처에 같은 시간대(정시~59분) 가격이 이미 있으면 건너뛰고 `duplicate`로 셈 — EC2·Actions 두 수집기가 같은 TiDB에 보내도 중복 저장 안 됨 |
 | 관리자 | `GET /admin/rpa-logs`, `GET /admin/ai-metrics` | ADMIN | 수집 현황, AI 사용 지표 |
 

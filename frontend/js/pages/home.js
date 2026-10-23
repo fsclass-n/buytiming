@@ -1,14 +1,19 @@
 import { api } from '../api.js';
 import { $, initPage, productCard, labelBadge, won, pct, esc, spinner, showError } from '../common.js';
 
-await initPage({ active: 'home' });
+// 홈은 로그인 없이 볼 수 있다. 알림 요약만 로그인 사용자에게 표시
+const user = await initPage({ active: 'home', requireAuth: false });
 
 const timingEl = $('#timing-list');
 const dropEl = $('#drop-list');
 timingEl.innerHTML = spinner();
+if (!user) {
+  $('#alert-summary').innerHTML = `<div class="card p-3 mb-2 small"><span><i class="bi bi-person-circle me-1"></i>
+    <a href="login.html">로그인</a>하면 관심 상품의 목표가 알림과 AI 구매 조언을 받을 수 있습니다.</span></div>`;
+}
 
 try {
-  const [{ timing, drops }, alerts] = await Promise.all([api.get('/deals/today'), api.get('/alerts')]);
+  const [{ timing, drops }, alerts] = await Promise.all([api.get('/deals/today'), user ? api.get('/alerts') : { items: [] }]);
   timingEl.innerHTML = timing.length
     ? timing.map((p) => productCard(p, `${labelBadge(p.label)}<span class="small text-secondary">점수 ${p.score}</span><span class="fw-semibold ms-auto">${won(p.current_price)}</span>`)).join('')
     : '<p class="text-secondary">판정 가능한 상품이 아직 없습니다.</p>';

@@ -84,6 +84,13 @@ def test_deals_today(client, user_h):
     assert scores == sorted(scores, reverse=True) and len(d["drops"]) > 0
 
 
+def test_deals_today_is_public(client):
+    """홈 화면은 로그인 없이 볼 수 있다 (개인 정보가 없는 데이터)"""
+    r = client.get(f"{API}/deals/today")
+    assert r.status_code == 200 and r.json()["timing"]
+    assert client.get(f"{API}/alerts").status_code == 401  # 알림은 여전히 로그인 필요
+
+
 def test_register_url(client, user_h):
     bad = client.post(f"{API}/products", headers=user_h, json={"url": "https://unknown.example.org/p/1"})
     assert bad.status_code == 400 and bad.json()["code"] == "UNSUPPORTED_MALL"

@@ -370,7 +370,7 @@ const routes = [
 export async function handleMock(method, fullPath, body = {}, token = null) {
   const [path, qstr = ''] = fullPath.split('?');
   await sleep(120);
-  const open = path.startsWith('/auth/');
+  const open = path.startsWith('/auth/') || path === '/deals/today'; // 백엔드와 같은 공개 경로
   if (!open && !token) return fail(401, 'UNAUTHORIZED', '로그인이 필요합니다.');
   for (const [meth, re, fn] of routes) {
     const m = path.match(re);
