@@ -76,3 +76,29 @@ EC2에서 넣을 때: `docker compose exec api python -m app.seed`
 - TiDB의 `AUTO_INCREMENT` 값은 증가는 하지만 연속이 아닐 수 있습니다. ID가 1, 2, 3…으로 이어진다고 가정하지 않습니다.
 
 다음 문서: [07. Render 배포](07-deploy-render.md)
+
+## 7. DB 이름 변경 기록 (buytiming → picktiming)
+
+TiDB·MySQL은 `ALTER DATABASE ... RENAME`을 지원하지 않는다(문법 오류). 새 DB를 만들고 테이블을 `RENAME TABLE`로 옮긴다.
+데이터는 복사되지 않고 이동만 하므로 빠르고, 행·인덱스·AUTO_INCREMENT 값이 그대로 유지된다.
+
+```sql
+CREATE DATABASE IF NOT EXISTS picktiming;
+RENAME TABLE buytiming.users TO picktiming.users;
+RENAME TABLE buytiming.products TO picktiming.products;
+RENAME TABLE buytiming.malls TO picktiming.malls;
+RENAME TABLE buytiming.product_listings TO picktiming.product_listings;
+RENAME TABLE buytiming.price_history TO picktiming.price_history;
+RENAME TABLE buytiming.public_prices TO picktiming.public_prices;
+RENAME TABLE buytiming.watchlist TO picktiming.watchlist;
+RENAME TABLE buytiming.alerts TO picktiming.alerts;
+RENAME TABLE buytiming.timing_predictions TO picktiming.timing_predictions;
+RENAME TABLE buytiming.ai_advice_logs TO picktiming.ai_advice_logs;
+RENAME TABLE buytiming.model_versions TO picktiming.model_versions;
+RENAME TABLE buytiming.rpa_job_logs TO picktiming.rpa_job_logs;
+```
+
+- 확인: `SHOW TABLES FROM buytiming;`이 비어 있고 `SELECT COUNT(*) FROM picktiming.users;`가 이전과 같아야 한다.
+- 이어서 `DATABASE_URL` 끝의 DB 이름을 `picktiming`으로 바꾼다: 로컬 `.env` → Render Environment → EC2 `.env`.
+  Render가 이전 주소로 다시 시작하면 서버 시작 시 `buytiming`에 빈 테이블을 새로 만들 수 있으니 Render 값을 바로 바꾼다.
+- 빈 `buytiming`은 위 확인 후에만 `DROP DATABASE buytiming;`으로 지운다(되돌릴 수 없음).
