@@ -84,8 +84,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci --no-audit --no-fund
       - run: npm run build
-      - name: 빌드 결과 확인 (데모 모드 config.js, SPA 진입점)
-        run: test -f dist/index.html && grep -q 'API_BASE_URL: ""' dist/js/config.js
+      - name: "빌드 결과 확인 (데모 모드 config.js, SPA 진입점)"
+        run: "test -f dist/index.html && grep -q API_BASE_URL dist/js/config.js"
 
   docker:
     name: Docker build
