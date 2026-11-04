@@ -4,8 +4,8 @@ const BASE = (window.APP_CONFIG?.API_BASE_URL || '').trim();
 /** API_BASE_URL이 없으면 데모 모드: 같은 REST 계약을 브라우저 목업으로 처리 */
 export const DEMO = BASE === '';
 const API_ROOT = `${BASE.replace(/\/+$/, '')}/api/v1`;
-const TOKEN_KEY = 'bt_token';
-const USER_KEY = 'bt_user';
+const TOKEN_KEY = 'pt_token';
+const USER_KEY = 'pt_user';
 
 export class ApiError extends Error {
   constructor(status, code, message) {
@@ -48,7 +48,7 @@ async function request(method, path, body) {
   const data = resp.status === 204 ? null : await resp.json().catch(() => ({}));
   if (resp.status === 401 && !path.startsWith('/auth/')) {
     auth.clear();
-    window.dispatchEvent(new Event('bt:logout'));
+    window.dispatchEvent(new Event('pt:logout'));
   }
   if (!resp.ok) throw new ApiError(resp.status, data?.code, data?.message || data?.detail || `요청 실패 (${resp.status})`);
   return data;

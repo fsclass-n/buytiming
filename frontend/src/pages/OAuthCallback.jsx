@@ -14,7 +14,7 @@ export default function OAuthCallback() {
     const token = h.get('token');
     const next = h.get('next') || '/';
     if (!token) return setError(new Error('로그인 정보를 받지 못했습니다.'));
-    localStorage.setItem('bt_token', token);
+    localStorage.setItem('pt_token', token);
     api.get('/users/me').then((u) => {
       auth.save(token, u);
       setUser(u);

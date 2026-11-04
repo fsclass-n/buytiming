@@ -1,4 +1,4 @@
-# CLAUDE.md — 바이타이밍(BuyTiming) 운영 매뉴얼
+# CLAUDE.md — 픽타이밍(PickTiming) 운영 매뉴얼
 
 Claude는 이 저장소에서 작업을 시작하기 전에 이 문서를 먼저 읽는다.
 이 문서의 규칙이 `.claude/rules/ecc/`(ECC 공통 규칙)와 충돌하면 **이 문서를 우선**한다.
@@ -62,7 +62,7 @@ CHANGED_FILES="backend/app/main.py" EVENT=push bash .github/scripts/detect-chang
 7. **DB 호환성**: 로컬·Render·EC2 모두 TiDB(MySQL 호환), CI는 SQLite와 MySQL 8 둘 다 테스트한다.
    한쪽 DB에서만 동작하는 SQL·타입(PostgreSQL 전용 문법 등)을 쓰지 않는다.
 8. **데이터 삭제 금지**: 로컬도 운영 TiDB를 쓴다. `python -m app.seed --reset`, `TEST_DATABASE_URL=<TiDB>` 테스트는 운영 데이터를 지우므로 실행하지 않는다.
-   DB 구조를 바꾸는 실험은 사용자 승인 후 별도 DB(예: `buytiming_dev`)에서 한다.
+   DB 구조를 바꾸는 실험은 사용자 승인 후 별도 DB(예: `picktiming_dev`)에서 한다.
 9. **RPA 수집 원칙**: robots.txt 확인, 요청 간격(기본 3초) 유지, `rpa/malls.json`에 등록된(약관상 허용된) 쇼핑몰만 수집한다.
 10. **Render 무료 플랜**: 콜드 스타트와 메모리 제한이 있다. 무거운 의존성·상주 작업을 API 컨테이너에 추가하지 않는다.
 

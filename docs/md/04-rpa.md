@@ -5,7 +5,7 @@
 | 실행 위치 | 방식 | 보내는 곳 | 인증 키 |
 |---|---|---|---|
 | EC2 | `rpa` 컨테이너 상주 — 내장 스케줄러([`scheduler.py`](../../rpa/collector/scheduler.py)), 매시 정각 | `http://api:8000` (같은 EC2의 API) | EC2 `.env`의 `RPA_API_KEY` |
-| Render | GitHub Actions 예약 실행([`collect-render.yml`](../../.github/workflows/collect-render.yml)), 매시 07분 | `https://buytiming.onrender.com` | GitHub Secret `RENDER_RPA_API_KEY` = Render의 `RPA_API_KEY` |
+| Render | GitHub Actions 예약 실행([`collect-render.yml`](../../.github/workflows/collect-render.yml)), 매시 07분 | `https://picktiming.onrender.com` | GitHub Secret `RENDER_RPA_API_KEY` = Render의 `RPA_API_KEY` |
 
 - Render 무료 플랜은 상주 작업을 돌릴 수 없고 15분 무요청 시 잠들기 때문에, Actions가 먼저 `/health`로 깨운 뒤(최대 3분 대기) 수집합니다.
 - 두 수집기는 같은 TiDB에 저장합니다. API가 **같은 판매처·같은 시간대의 두 번째 가격은 건너뛰므로**(`duplicate`) 중복 행·중복 알림이 생기지 않습니다.
@@ -21,7 +21,7 @@
 | `collect` | 매시 정각 | 수집 대상 목록 → 쇼핑몰 페이지 수집 → pandas 정제 → 일괄 저장 → 작업 로그 | `GET /rpa/listings`, `POST /rpa/prices/bulk`, `POST /rpa/logs` |
 | `train` | 매일 03:00 | 모델 재학습 요청(API가 백그라운드로 학습) | `POST /rpa/train` |
 | `public` | 매일 06:00 | 한국소비자원 참가격 수집 (`KCA_API_URL`, `DATA_GO_KR_KEY` 없으면 건너뜀) | `PUT /rpa/public-prices` |
-| `report` | 매주 월 07:00 | 주간 가격 리포트(엑셀) 저장 → EC2 `~/buytiming/reports/`, Render용은 Actions 아티팩트(30일 보관) | `GET /rpa/reports/weekly` |
+| `report` | 매주 월 07:00 | 주간 가격 리포트(엑셀) 저장 → EC2 `~/picktiming/reports/`, Render용은 Actions 아티팩트(30일 보관) | `GET /rpa/reports/weekly` |
 
 수동 실행
 - EC2: `docker compose exec rpa python -m collector.jobs collect` (또는 `train`, `public`, `report`)
@@ -31,7 +31,7 @@
 
 ## 2. 설정 (환경 변수)
 
-[`config.py`](../../rpa/collector/config.py). EC2에서는 `~/buytiming/.env`를 함께 읽습니다.
+[`config.py`](../../rpa/collector/config.py). EC2에서는 `~/picktiming/.env`를 함께 읽습니다.
 
 | 변수 | 기본값 | EC2 설정 | GitHub Actions(Render) 설정 |
 |---|---|---|---|

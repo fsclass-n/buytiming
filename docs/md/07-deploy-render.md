@@ -1,20 +1,20 @@
-# 07. [배포 2단계] Render — 단독 풀스택 (https://buytiming.onrender.com)
+# 07. [배포 2단계] Render — 단독 풀스택 (https://picktiming.onrender.com)
 
 Render 서비스 하나가 **API와 프런트엔드 화면을 같은 도메인으로** 제공합니다.
 이미지: [`Dockerfile(저장소 루트)`](../../Dockerfile) (빌드 컨텍스트 = 저장소 루트, 루트 [`.dockerignore`](../../.dockerignore)로 `backend/app`·`frontend/`만 포함).
 가격 수집은 GitHub Actions가 매시 대신 실행합니다(10 문서).
 
-준비물: 값을 채운 로컬 `.env`(06 문서, [`.env.example`](../../.env.example) 기반), GitHub 저장소 `fsclass-n/buytiming` 접근 권한
+준비물: 값을 채운 로컬 `.env`(06 문서, [`.env.example`](../../.env.example) 기반), GitHub 저장소 `fsclass-n/picktiming` 접근 권한
 
 ## 1. 서비스 만들기 / 기존 서비스 설정 바꾸기
 
-Render 대시보드에서 이미 `buytiming` 서비스를 만들었다면 **Settings**에서 아래 값으로 맞춥니다.
-새로 만든다면 **New → Web Service** → 저장소 `fsclass-n/buytiming` 연결 후 같은 값으로 입력합니다.
+Render 대시보드에서 이미 `picktiming` 서비스를 만들었다면 **Settings**에서 아래 값으로 맞춥니다.
+새로 만든다면 **New → Web Service** → 저장소 `fsclass-n/picktiming` 연결 후 같은 값으로 입력합니다.
 (Blueprint로 만들면 [`render.yaml`](../../render.yaml)이 같은 값을 자동으로 넣습니다.)
 
 | 항목 | 값 |
 |---|---|
-| Name | `buytiming` |
+| Name | `picktiming` |
 | Language / Runtime | **Docker** |
 | Branch | `main` |
 | Region | **Singapore** |
@@ -32,7 +32,7 @@ Render 대시보드에서 이미 `buytiming` 서비스를 만들었다면 **Sett
 
 로컬 PC·EC2와 **같은 `.env`** 를 씁니다.
 
-1. Render → buytiming 서비스 → **Environment** → **Add from .env**
+1. Render → picktiming 서비스 → **Environment** → **Add from .env**
 2. 로컬 `.env` 파일 내용을 전부 복사해 붙여 넣기 → 추가된 목록 확인 → **Save, rebuild, and deploy**
    (예전에 넣은 같은 이름의 값이 있으면 새 값으로 바뀌었는지 확인합니다)
 
@@ -70,10 +70,10 @@ Settings → Build & Deploy → **Auto-Deploy: After CI Checks Pass**
 
    | 주소 | 기대 결과 |
    |---|---|
-   | https://buytiming.onrender.com/health | `{"status":"ok","env":"production","gemini":...}` — 이때 TiDB 테이블도 자동 생성됨 |
-   | https://buytiming.onrender.com/ | 바이타이밍 홈 화면 → 로그인 화면으로 이동 (데모 배너 없음) |
-   | https://buytiming.onrender.com/js/config.js | `API_BASE_URL: "/"` |
-   | https://buytiming.onrender.com/docs | API 문서 |
+   | https://picktiming.onrender.com/health | `{"status":"ok","env":"production","gemini":...}` — 이때 TiDB 테이블도 자동 생성됨 |
+   | https://picktiming.onrender.com/ | 픽타이밍 홈 화면 → 로그인 화면으로 이동 (데모 배너 없음) |
+   | https://picktiming.onrender.com/js/config.js | `API_BASE_URL: "/"` |
+   | https://picktiming.onrender.com/docs | API 문서 |
 
 4. 시드 데이터가 아직 없으면 06 문서 4단계(로컬 PC에서)로 한 번 넣습니다. Render 무료 플랜은 셸이 없습니다.
 5. 기동 실패 시 로그 메시지별 원인은 [11 문서](11-checklist-troubleshooting.md) 참고

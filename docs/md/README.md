@@ -1,16 +1,16 @@
-# BuyTiming 문서 모음 — 프로젝트 파악 → 배포까지
+# PickTiming 문서 모음 — 프로젝트 파악 → 배포까지
 
-이 폴더는 바이타이밍 프로젝트 전체를 이해하고, **GitHub를 통해 Render와 AWS EC2에 각각 독립된 풀스택으로 배포**하기 위한 단계별 문서입니다.
+이 폴더는 픽타이밍 프로젝트 전체를 이해하고, **GitHub를 통해 Render와 AWS EC2에 각각 독립된 풀스택으로 배포**하기 위한 단계별 문서입니다.
 번호 순서대로 읽고 진행하면 됩니다.
 
 ## 목표 구성 (확정)
 
 | 구분 | 주소 | 역할 | 상태 |
 |---|---|---|---|
-| Netlify | https://buytiming.netlify.app | **프런트엔드 전용 — 데모 모드**(서버 없이 브라우저 목업 데이터) | 배포 완료, 추가 작업 없음 |
+| Netlify | https://picktiming.netlify.app | **프런트엔드 전용 — 데모 모드**(서버 없이 브라우저 목업 데이터) | 배포 완료, 추가 작업 없음 |
 | 로컬 PC | http://localhost:8000 | FastAPI가 API + 프런트엔드 제공 (`uvicorn`) | `.env` 작성 예정 |
-| Render | https://buytiming.onrender.com | **단독 풀스택**: FastAPI가 API + 프런트엔드를 같은 도메인으로 제공 (Docker, 무료 플랜). 커밋 → CI 통과 → 자동 배포 | 일부 설정됨 |
-| AWS EC2 | http://buytiming.duckdns.org | **단독 풀스택**: nginx(프런트엔드) + FastAPI + RPA 수집기 (docker compose) | 도메인만 준비됨 |
+| Render | https://picktiming.onrender.com | **단독 풀스택**: FastAPI가 API + 프런트엔드를 같은 도메인으로 제공 (Docker, 무료 플랜). 커밋 → CI 통과 → 자동 배포 | 일부 설정됨 |
+| AWS EC2 | http://picktiming.duckdns.org | **단독 풀스택**: nginx(프런트엔드) + FastAPI + RPA 수집기 (docker compose) | 도메인만 준비됨 |
 | TiDB Cloud | (TiDB 접속 주소) | **유일한 DB — 로컬·Render·EC2가 같은 DB를 공유** | DB 생성 완료 |
 | MySQL 8 | GitHub Actions CI | MySQL 호환성 자동 테스트 전용 | CI에 이미 구성됨 |
 | GitHub Actions | — | CI/CD + **Render용 가격 수집(매시 예약 실행)** | 값 등록 예정 |
@@ -20,7 +20,7 @@
 ```
  사용자 ──▶ Netlify  (frontend only, 데모 모드 — API 호출 없음)
 
- 사용자 ──▶ Render  https://buytiming.onrender.com          사용자 ──▶ EC2  http://buytiming.duckdns.org
+ 사용자 ──▶ Render  https://picktiming.onrender.com          사용자 ──▶ EC2  http://picktiming.duckdns.org
             ┌──────────────────────────────┐                           ┌───────────────────────────────────┐
             │ FastAPI = API + 프런트엔드    │                           │ nginx(프런트) ─▶ api ◀─ rpa(매시) │
             └──────────────┬───────────────┘                           └─────────────────┬─────────────────┘

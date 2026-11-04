@@ -4,7 +4,7 @@
 const DAY = 86400000;
 export const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9\s]).{8,72}$/;
 const AI_DAILY_LIMIT = 20;
-const LS = { watch: 'bt_mock_watchlist', alertsRead: 'bt_mock_alerts_read', custom: 'bt_mock_custom', quota: 'bt_mock_quota', users: 'bt_mock_users' };
+const LS = { watch: 'pt_mock_watchlist', alertsRead: 'pt_mock_alerts_read', custom: 'pt_mock_custom', quota: 'pt_mock_quota', users: 'pt_mock_users' };
 
 const MALLS = [
   { id: 1, name: '쇼핑몰 A', offset: 0, ship: () => 0 },
@@ -284,7 +284,7 @@ const routes = [
   ['GET', /^\/auth\/providers$/, () => ok({ demo_login: true, google: false, naver: false, kakao: false })],
   ['POST', /^\/auth\/demo-login$/, (m, body) => {
     const admin = body.kind === 'admin';
-    const user = admin ? { id: 1, email: 'admin@buytiming.demo', name: '관리자', role: 'ADMIN' } : { id: 2, email: 'demo@buytiming.demo', name: '데모 사용자', role: 'USER' };
+    const user = admin ? { id: 1, email: 'admin@picktiming.demo', name: '관리자', role: 'ADMIN' } : { id: 2, email: 'demo@picktiming.demo', name: '데모 사용자', role: 'USER' };
     return ok({ access_token: `demo-${user.role.toLowerCase()}`, token_type: 'bearer', user });
   }],
   ['POST', /^\/auth\/signup$/, (m, body) => {
@@ -296,7 +296,7 @@ const routes = [
     save(LS.users, [...users, user]);
     return ok(user, 201);
   }],
-  ['GET', /^\/users\/me$/, (m, b, token) => ok(JSON.parse(localStorage.getItem('bt_user') || 'null') || { id: 2, email: 'demo@buytiming.demo', name: 'demo', role: token === 'demo-admin' ? 'ADMIN' : 'USER' })],
+  ['GET', /^\/users\/me$/, (m, b, token) => ok(JSON.parse(localStorage.getItem('pt_user') || 'null') || { id: 2, email: 'demo@picktiming.demo', name: 'demo', role: token === 'demo-admin' ? 'ADMIN' : 'USER' })],
   ['GET', /^\/products\/search$/, (m, b, t, query) => {
     const q = (query.get('q') || '').trim().toLowerCase();
     const items = allProducts().filter((p) => !q || `${p.name} ${p.brand} ${p.category} ${p.model_no}`.toLowerCase().includes(q))
@@ -385,8 +385,8 @@ const routes = [
 
 function mockUsers() {
   const base = [
-    { id: 1, email: 'admin@buytiming.demo', name: '관리자', role: 'ADMIN', watch_count: 0 },
-    { id: 2, email: 'demo@buytiming.demo', name: '데모 사용자', role: 'USER', watch_count: watchItems().length },
+    { id: 1, email: 'admin@picktiming.demo', name: '관리자', role: 'ADMIN', watch_count: 0 },
+    { id: 2, email: 'demo@picktiming.demo', name: '데모 사용자', role: 'USER', watch_count: watchItems().length },
   ];
   const extra = load(LS.users, []).map((u) => ({ ...u, watch_count: 0 }));
   return [...extra.reverse(), ...base].map((u) => ({ created_at: new Date(Date.now() - u.id * DAY).toISOString(), ...u }));

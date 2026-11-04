@@ -37,7 +37,7 @@ export default function Login() {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <section className="relative hidden overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-indigo-500 p-12 text-white lg:flex lg:flex-col lg:justify-between">
-        <Link to="/" className="flex items-center gap-2 text-2xl"><Icon name="fa-clock-rotate-left" /><span className="font-display">BuyTiming</span></Link>
+        <Link to="/" className="flex items-center gap-2 text-2xl"><Icon name="fa-clock-rotate-left" /><span className="font-display">PickTiming</span></Link>
         <div>
           <h1 className="text-5xl leading-tight">지금 사도<br />될까요?</h1>
           <p className="mt-4 max-w-md text-lg text-white/80">쇼핑몰 가격을 1시간마다 비교하고, AI가 과거 가격 패턴으로 구매 적기를 알려 드립니다.</p>
@@ -46,14 +46,14 @@ export default function Login() {
               <div key={t} className="rounded-2xl bg-white/10 p-4 backdrop-blur"><Icon name={`${i} text-2xl`} /><div className="mt-2 text-sm">{t}</div></div>))}
           </div>
         </div>
-        <div className="text-sm text-white/60">© BuyTiming · Final-Project 3조</div>
+        <div className="text-sm text-white/60">© PickTiming · Final-Project 3조</div>
         <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-indigo-300/20 blur-3xl" />
       </section>
 
       <section className="flex items-center justify-center p-6 sm:p-12">
         <div className="w-full max-w-md">
-          <Link to="/" className="mb-8 flex items-center gap-2 text-xl lg:hidden"><Icon name="fa-clock-rotate-left text-brand-600" /><span className="font-display">BuyTiming</span></Link>
+          <Link to="/" className="mb-8 flex items-center gap-2 text-xl lg:hidden"><Icon name="fa-clock-rotate-left text-brand-600" /><span className="font-display">PickTiming</span></Link>
           <h2 className="text-3xl text-slate-900">로그인</h2>
           <p className="mt-1 text-sm text-slate-500">계정이 없으신가요? <Link className="font-semibold text-brand-600" to="/signup">회원가입</Link></p>
 

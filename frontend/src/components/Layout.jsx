@@ -18,9 +18,9 @@ const ADMIN_NAV = [
 
 function Brand() {
   return (
-    <Link to="/" className="flex items-center gap-2 text-xl text-slate-900" aria-label="바이타이밍 홈">
+    <Link to="/" className="flex items-center gap-2 text-xl text-slate-900" aria-label="픽타이밍 홈">
       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white"><Icon name="fa-clock-rotate-left" /></span>
-      <span className="font-display">BuyTiming</span>
+      <span className="font-display">PickTiming</span>
     </Link>
   );
 }
@@ -102,9 +102,9 @@ function Footer() {
           <ul className="space-y-1 text-slate-500"><li><Link to="/search">상품 검색</Link></li><li><Link to="/watchlist">관심 상품</Link></li><li><Link to="/alerts">가격 알림</Link></li></ul></div>
         <div className="text-sm text-slate-500"><div className="mb-2 font-semibold text-slate-900">Final-Project 3조</div>
           박미금(팀장) · 김모란 · 이오리 · 홍기흥
-          <div className="mt-2"><a className="hover:text-brand-600" href="https://github.com/fsclass-n/buytiming" target="_blank" rel="noreferrer"><Icon name="fa-code-branch" className="mr-1" />GitHub</a></div></div>
+          <div className="mt-2"><a className="hover:text-brand-600" href="https://github.com/fsclass-n/picktiming" target="_blank" rel="noreferrer"><Icon name="fa-code-branch" className="mr-1" />GitHub</a></div></div>
       </div>
-      <div className="border-t border-slate-100 py-4 text-center text-xs text-slate-400">가격 예측은 과거 데이터 기반 참고 정보이며 실제 가격과 다를 수 있습니다. © BuyTiming</div>
+      <div className="border-t border-slate-100 py-4 text-center text-xs text-slate-400">가격 예측은 과거 데이터 기반 참고 정보이며 실제 가격과 다를 수 있습니다. © PickTiming</div>
       <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="맨 위로"
         className={`fixed bottom-6 right-6 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg transition-all duration-300 hover:bg-brand-700 ${show ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'}`}>
         <Icon name="fa-arrow-up" />

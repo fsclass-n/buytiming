@@ -24,7 +24,7 @@ async def lifespan(_: FastAPI):
 
 
 settings = get_settings()
-app = FastAPI(title="BuyTiming API", version="1.1.0", description="실시간 가격 비교 & 구매 적기 추천 API", lifespan=lifespan)
+app = FastAPI(title="PickTiming API", version="1.1.0", description="실시간 가격 비교 & 구매 적기 추천 API", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=settings.origins, allow_methods=["*"], allow_headers=["*"],
                    allow_credentials=False)
 register_error_handlers(app)
@@ -76,4 +76,4 @@ if FRONTEND_DIR.is_dir() and (FRONTEND_DIR / "index.html").is_file():
 else:
     @app.get("/", include_in_schema=False)
     def root():
-        return {"service": "BuyTiming API", "docs": "/docs", "health": "/health"}
+        return {"service": "PickTiming API", "docs": "/docs", "health": "/health"}

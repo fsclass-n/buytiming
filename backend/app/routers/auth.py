@@ -19,8 +19,8 @@ from ..security import create_token, current_user, hash_password, verify_passwor
 router = APIRouter(tags=["인증"])
 log = logging.getLogger(__name__)
 
-# 시드(python -m app.seed)가 만드는 테스트 계정
-DEMO_ACCOUNTS = {"user": "demo@buytiming.demo", "admin": "admin@buytiming.demo"}
+# 시드(python -m app.seed)가 만드는 테스트 계정. 서비스 이름 변경(BuyTiming → PickTiming) 전에 시드된 DB의 이전 이메일도 찾는다
+DEMO_ACCOUNTS = {"user": ("demo@picktiming.demo", "demo@buytiming.demo"), "admin": ("admin@picktiming.demo", "admin@buytiming.demo")}
 
 
 def _token_out(user: User) -> TokenOut:
@@ -59,7 +59,9 @@ def demo_login(body: DemoLoginIn, db: Session = Depends(get_db)):
     """테스트 계정 간편 로그인 (DEMO_LOGIN_ENABLED=true일 때만). 관리자 테스트 계정은 회원 권한을 바꿀 수 없다."""
     if not get_settings().demo_login_enabled:
         raise ApiError(403, "DEMO_LOGIN_DISABLED", "테스트 계정 로그인이 비활성화되어 있습니다.")
-    user = db.execute(select(User).where(User.email == DEMO_ACCOUNTS[body.kind])).scalar_one_or_none()
+    emails = DEMO_ACCOUNTS[body.kind]
+    users = {u.email: u for u in db.execute(select(User).where(User.email.in_(emails))).scalars()}
+    user = next((users[e] for e in emails if e in users), None)
     if user is None:
         raise ApiError(404, "DEMO_ACCOUNT_MISSING", "테스트 계정이 없습니다. 서버에서 python -m app.seed를 실행해 주세요.")
     return _token_out(user)

@@ -25,18 +25,18 @@
 3. 접근 허용 IP(IP Access List / Firewall 규칙)가 보이면 허용합니다: 개발 PC 공인 IP, EC2 Elastic IP, Render(고정 IP 없음 → Render 대시보드 Connect → Outbound의 IP 범위, 또는 전체 허용)
 4. **SQL Editor**에서 DB 생성 (기본 DB는 `test`이므로 반드시 만듦)
    ```sql
-   CREATE DATABASE buytiming;
+   CREATE DATABASE picktiming;
    ```
    테이블은 API가 처음 기동할 때 자동 생성됩니다.
 
 ## 3. `.env`에 넣기 (로컬·EC2·Render 공용)
 
 ```dotenv
-DATABASE_URL=mysql+pymysql://<USER>:<PASSWORD>@<HOST>:4000/buytiming?charset=utf8mb4
+DATABASE_URL=mysql+pymysql://<USER>:<PASSWORD>@<HOST>:4000/picktiming?charset=utf8mb4
 DB_SSL_CA=/etc/ssl/certs/ca-certificates.crt
 ```
 
-- 예: `mysql+pymysql://abcd1234.root:p%40ss@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/buytiming?charset=utf8mb4`
+- 예: `mysql+pymysql://abcd1234.root:p%40ss@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/picktiming?charset=utf8mb4`
 - 비밀번호에 `@ : / ? # %` 같은 특수문자가 있으면 **URL 인코딩**합니다(`@` → `%40`):
   `python -c "import urllib.parse;print(urllib.parse.quote('비밀번호', safe=''))"`
 - Connect With를 `SQLAlchemy`로 고르면 완성된 주소를 보여 주지만, 끝의 `?ssl_ca=...` 부분은 지우고 `?charset=utf8mb4`로 바꿉니다
@@ -48,7 +48,7 @@ DB_SSL_CA=/etc/ssl/certs/ca-certificates.crt
 로컬 `.env`가 TiDB를 가리키므로 **로컬 PC에서 바로** 넣을 수 있습니다. 데이터가 이미 있으면 자동으로 건너뜁니다.
 
 ```powershell
-cd E:\wi\git\buytiming
+cd E:\wi\git\picktiming
 .venv\Scripts\activate
 cd backend
 python -m app.seed          # 데모·관리자 계정 비밀번호가 화면에 출력됨 (.env의 SEED_* 값이 있으면 그 값)
@@ -66,7 +66,7 @@ EC2에서 넣을 때: `docker compose exec api python -m app.seed`
 
 - 그냥 `pytest`를 실행하는 것은 안전합니다. 테스트 설정([`conftest.py`](../../backend/tests/conftest.py))이 `DATABASE_URL`을 임시 SQLite로 덮어씁니다.
 - 로컬에서 수집기(`python -m collector.jobs collect`)를 돌리면 운영 DB에 가격이 저장됩니다. 같은 시간대 중복은 API가 건너뜁니다.
-- 실험용 DB가 필요하면 같은 TiDB 인스턴스에 `CREATE DATABASE buytiming_dev;`를 만들고, 로컬 `.env`의 주소 끝만 `/buytiming_dev`로 바꿔 씁니다.
+- 실험용 DB가 필요하면 같은 TiDB 인스턴스에 `CREATE DATABASE picktiming_dev;`를 만들고, 로컬 `.env`의 주소 끝만 `/picktiming_dev`로 바꿔 씁니다.
 
 ## 6. TiDB 사용 시 코드 작성 주의
 

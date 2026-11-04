@@ -11,7 +11,7 @@ from ..models import AiAdviceLog, ModelVersion, Product, RpaJobLog, User, Watchl
 from ..schemas import RoleIn
 from ..security import admin_user
 
-DEMO_ADMIN = "admin@buytiming.demo"
+DEMO_ADMINS = {"admin@picktiming.demo", "admin@buytiming.demo"}  # 이전 이름(BuyTiming)으로 시드된 테스트 관리자 포함
 
 router = APIRouter(prefix="/admin", tags=["관리자"])
 
@@ -101,7 +101,7 @@ def list_users(q: str = Query("", max_length=100), role: str = Query("", pattern
 @router.patch("/users/{user_id}/role")
 def change_role(user_id: int, body: RoleIn, db: Session = Depends(get_db), actor: User = Depends(admin_user)):
     """회원 권한 변경(일반 사용자 ↔ 관리자)"""
-    if actor.email == DEMO_ADMIN:
+    if actor.email in DEMO_ADMINS:
         raise ApiError(403, "DEMO_READ_ONLY", "테스트 관리자 계정은 회원 권한을 변경할 수 없습니다(조회만 가능).")
     target = db.get(User, user_id)
     if target is None:

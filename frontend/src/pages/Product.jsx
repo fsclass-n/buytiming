@@ -23,7 +23,7 @@ export default function Product() {
 
   useEffect(() => {
     setError(null);
-    api.get(`/products/${id}`).then((x) => { setP(x); document.title = `${x.name} · 바이타이밍`; }).catch(setError);
+    api.get(`/products/${id}`).then((x) => { setP(x); document.title = `${x.name} · 픽타이밍`; }).catch(setError);
     api.get(`/products/${id}/compare`).then(setCmp).catch(setError);
     api.get(`/products/${id}/timing`).then(setTiming).catch(setError);
     api.post(`/products/${id}/advice`).then(setAdvice).catch(setAdviceErr);

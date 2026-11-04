@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=(".env", "../.env"), env_file_encoding="utf-8", extra="ignore")
 
     app_env: str = "development"
-    database_url: str = "sqlite:///./buytiming.db"
+    database_url: str = "sqlite:///./picktiming.db"
     db_ssl_ca: str | None = None  # 값이 있으면 TLS 접속(TiDB 필수). 파일이 없는 환경(Windows 로컬)은 certifi/OS 인증서로 검증
 
     jwt_secret: str = "change-me"
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.5-flash"
     ai_daily_limit: int = 20
 
-    # 테스트 계정 간편 로그인(시드의 demo@·admin@buytiming.demo). 시연용 — 실제 운영에서는 false
+    # 테스트 계정 간편 로그인(시드의 demo@·admin@picktiming.demo). 시연용 — 실제 운영에서는 false
     demo_login_enabled: bool = False
 
     # 소셜 로그인(OAuth). 값이 있는 제공자만 버튼이 활성화된다. 콜백 주소: <서비스 주소>/api/v1/auth/oauth/<provider>/callback
@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     kakao_client_secret: str = ""  # 카카오 Client Secret(사용 설정한 경우만)
     public_base_url: str = ""  # OAuth 콜백 주소의 기준. 비우면 요청 주소(프록시 헤더 반영)를 사용
 
-    allowed_origins: str = "*"  # 쉼표 구분 (예: https://buytiming.netlify.app)
+    allowed_origins: str = "*"  # 쉼표 구분 (예: https://picktiming.netlify.app)
     tz: str = "Asia/Seoul"
     # 프런트엔드 정적 파일 폴더. 비우면 저장소의 frontend/를 찾아 있으면(로컬) 서빙, 없으면(EC2 api 컨테이너) API만 제공
     frontend_dir: str | None = None

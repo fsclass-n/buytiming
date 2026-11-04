@@ -1,4 +1,4 @@
-"""BuyTiming API의 RPA 수신 엔드포인트(X-RPA-KEY) 클라이언트"""
+"""PickTiming API의 RPA 수신 엔드포인트(X-RPA-KEY) 클라이언트"""
 from datetime import datetime
 
 import requests

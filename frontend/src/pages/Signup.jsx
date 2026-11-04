@@ -39,7 +39,7 @@ export default function Signup() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 to-white p-6">
       <div className="card w-full max-w-md p-8">
-        <Link to="/" className="mb-6 flex items-center gap-2 text-xl"><Icon name="fa-clock-rotate-left text-brand-600" /><span className="font-display">BuyTiming</span></Link>
+        <Link to="/" className="mb-6 flex items-center gap-2 text-xl"><Icon name="fa-clock-rotate-left text-brand-600" /><span className="font-display">PickTiming</span></Link>
         <h1 className="text-3xl">회원가입</h1>
         <p className="mt-1 text-sm text-slate-500">이미 계정이 있으신가요? <Link className="font-semibold text-brand-600" to="/login">로그인</Link></p>
         <form className="mt-6 space-y-4" onSubmit={submit}>

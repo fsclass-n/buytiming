@@ -1,4 +1,4 @@
-# 08. [배포 3단계] AWS EC2 — 단독 풀스택 (http://buytiming.duckdns.org)
+# 08. [배포 3단계] AWS EC2 — 단독 풀스택 (http://picktiming.duckdns.org)
 
 EC2 한 대에서 [`docker-compose.yml`](../../docker-compose.yml)의 세 컨테이너로 화면·API·가격 수집을 모두 운영합니다.
 Render를 호출하지 않으며, DB만 **TiDB**(Render와 공유)를 씁니다.
@@ -22,14 +22,14 @@ Render를 호출하지 않으며, DB만 **TiDB**(Render와 공유)를 씁니다.
 ## 2. 고정 IP와 DuckDNS
 
 1. EC2 → **Elastic IP** 할당 → 인스턴스에 연결 (재시작해도 IP가 바뀌지 않게)
-2. https://www.duckdns.org 로그인 → 서브도메인 `buytiming`의 **current ip**를 Elastic IP로 입력 → update ip
-3. PC에서 확인: `nslookup buytiming.duckdns.org` → Elastic IP가 나오면 성공
+2. https://www.duckdns.org 로그인 → 서브도메인 `picktiming`의 **current ip**를 Elastic IP로 입력 → update ip
+3. PC에서 확인: `nslookup picktiming.duckdns.org` → Elastic IP가 나오면 성공
 4. TiDB의 허용 IP 목록이 있다면 이 Elastic IP를 추가(06 문서)
 
 ## 3. 접속
 
 ```bash
-ssh -i buytiming.pem ubuntu@buytiming.duckdns.org
+ssh -i picktiming.pem ubuntu@picktiming.duckdns.org
 ```
 
 ## 4. (micro 인스턴스만) 스왑 2 GB 만들기
@@ -48,14 +48,14 @@ free -h
 
 ```bash
 sudo apt-get update && sudo apt-get install -y git
-git clone https://github.com/fsclass-n/buytiming.git ~/buytiming
+git clone https://github.com/fsclass-n/picktiming.git ~/picktiming
 
 # 1회차: Docker 설치 후 종료 → 로그아웃했다가 다시 SSH 접속(docker 그룹 적용)
-bash ~/buytiming/deploy/ec2-setup.sh https://github.com/fsclass-n/buytiming.git
+bash ~/picktiming/deploy/ec2-setup.sh https://github.com/fsclass-n/picktiming.git
 exit
 
-# 2회차: .env.example을 복사해 ~/buytiming/.env를 만들고 종료
-bash ~/buytiming/deploy/ec2-setup.sh https://github.com/fsclass-n/buytiming.git
+# 2회차: .env.example을 복사해 ~/picktiming/.env를 만들고 종료
+bash ~/picktiming/deploy/ec2-setup.sh https://github.com/fsclass-n/picktiming.git
 ```
 
 ## 6. `.env` — 로컬 PC의 `.env`를 그대로 복사 (가장 중요)
@@ -64,12 +64,12 @@ bash ~/buytiming/deploy/ec2-setup.sh https://github.com/fsclass-n/buytiming.git
 
 PC(PowerShell, 저장소 폴더)에서:
 ```powershell
-scp -i <키.pem 경로> .env ubuntu@buytiming.duckdns.org:~/buytiming/.env
+scp -i <키.pem 경로> .env ubuntu@picktiming.duckdns.org:~/picktiming/.env
 ```
 EC2에서:
 ```bash
-chmod 600 ~/buytiming/.env
-grep -c . ~/buytiming/.env          # 줄 수 확인(빈 파일이 아닌지)
+chmod 600 ~/picktiming/.env
+grep -c . ~/picktiming/.env          # 줄 수 확인(빈 파일이 아닌지)
 ```
 
 - `ec2-setup.sh` 2회차가 만든 예시 `.env`는 이 복사로 덮어씁니다.
@@ -80,14 +80,14 @@ grep -c . ~/buytiming/.env          # 줄 수 확인(빈 파일이 아닌지)
 ## 7. 기동
 
 ```bash
-cd ~/buytiming
+cd ~/picktiming
 docker compose config -q && echo "compose OK"      # .env 검증
 docker compose up -d --build                         # 첫 빌드는 수 분 소요
 docker compose ps                                    # api: healthy, rpa·web: running
 curl -fsS http://localhost/health                    # {"status":"ok","env":"production",...}
 ```
 
-PC 브라우저: http://buytiming.duckdns.org (프런트엔드), http://buytiming.duckdns.org/docs (API 문서)
+PC 브라우저: http://picktiming.duckdns.org (프런트엔드), http://picktiming.duckdns.org/docs (API 문서)
 
 ## 8. 시드 데이터 (TiDB에 아직 데이터가 없을 때 1회)
 
@@ -117,16 +117,16 @@ docker compose exec rpa python -m collector.jobs collect     # 즉시 1회 수�
 | 재시작 | `docker compose restart api` |
 | 수동 업데이트 | `git pull --ff-only origin main && docker compose up -d --build` |
 | 디스크 정리 | `docker image prune -f`, 확인 `df -h` |
-| 주간 리포트 | `ls ~/buytiming/reports/` |
+| 주간 리포트 | `ls ~/picktiming/reports/` |
 
 - 서버에서 저장소 파일(추적 대상)을 직접 수정하지 않습니다. 자동 배포의 `git pull --ff-only`가 실패합니다. 설정은 `.env`(Git 제외)에서만 바꿉니다.
 
 ## 11. (선택) HTTPS 구성
 
-EC2는 HTTP만으로도 동작하지만, http://buytiming.duckdns.org 화면은 로그인 비밀번호가 암호화되지 않은 채 전송되므로
-시연·운영 전에 HTTPS를 권장합니다. HTTPS로 바꾸면 `.env`의 `ALLOWED_ORIGINS`도 `https://buytiming.duckdns.org`로 바꿉니다.
+EC2는 HTTP만으로도 동작하지만, http://picktiming.duckdns.org 화면은 로그인 비밀번호가 암호화되지 않은 채 전송되므로
+시연·운영 전에 HTTPS를 권장합니다. HTTPS로 바꾸면 `.env`의 `ALLOWED_ORIGINS`도 `https://picktiming.duckdns.org`로 바꿉니다.
 
-- 방법: Let's Encrypt(certbot)로 `buytiming.duckdns.org` 인증서 발급 → nginx에 443 서버 블록 추가·80→443 리다이렉트 →
+- 방법: Let's Encrypt(certbot)로 `picktiming.duckdns.org` 인증서 발급 → nginx에 443 서버 블록 추가·80→443 리다이렉트 →
   compose `web`에 `443:443` 포트와 인증서 볼륨 추가 → 보안 그룹 443 열기 → 인증서 자동 갱신 설정
 - `deploy/nginx.conf`, `docker-compose.yml`을 바꾸는 작업이므로(EC2 전체 재배포 발생) 별도 작업으로 팀 승인 후 진행합니다.
 

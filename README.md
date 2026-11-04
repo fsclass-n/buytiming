@@ -1,4 +1,4 @@
-# 바이타이밍(BuyTiming) — 생성형 AI & RPA 기반 실시간 가격 비교·구매 적기 추천
+# 픽타이밍(PickTiming) — 생성형 AI & RPA 기반 실시간 가격 비교·구매 적기 추천
 
 Final-Project 3조 (김길동(조장), 박미금, 이오리, 홍기흥)
 
@@ -26,7 +26,7 @@ RPA가 쇼핑몰 가격과 공공 가격 데이터를 1시간마다 모아 실�
 ## 폴더 구조
 
 ```
-buytiming/
+picktiming/
 ├── frontend/              # 정적 사이트 (Netlify=데모 모드, Render·EC2=같은 도메인 API 연동)
 │   ├── *.html             # 홈·로그인·회원가입·검색·상세·AI 상담·관심 상품·알림·관리자 2종
 │   ├── js/api.js          # REST 클라이언트 (API_BASE_URL 없으면 mock.js로 데모 모드)
@@ -111,9 +111,9 @@ ruff check backend rpa
 
 ```bash
 # EC2(Ubuntu)에서
-bash deploy/ec2-setup.sh https://github.com/fsclass-n/buytiming.git      # Docker 설치 → 재접속 후 다시 실행
-# PC에서: scp -i <키.pem> .env ubuntu@buytiming.duckdns.org:~/buytiming/.env   (로컬 .env를 그대로 복사)
-cd ~/buytiming && docker compose up -d --build                            # http://buytiming.duckdns.org
+bash deploy/ec2-setup.sh https://github.com/fsclass-n/picktiming.git      # Docker 설치 → 재접속 후 다시 실행
+# PC에서: scp -i <키.pem> .env ubuntu@picktiming.duckdns.org:~/picktiming/.env   (로컬 .env를 그대로 복사)
+cd ~/picktiming && docker compose up -d --build                            # http://picktiming.duckdns.org
 ```
 
 - EC2 `.env`는 로컬 `.env`와 같은 파일입니다(서버에서 다시 입력하지 않음). `RPA_TARGET_API`는 넣지 않습니다(compose 기본값 `http://api:8000`).
@@ -154,8 +154,8 @@ cd ~/buytiming && docker compose up -d --build                            # http
 | Secret | `RENDER_DEPLOY_HOOK_URL` | **등록하지 않음** (Render Auto-Deploy를 Off로 둘 때만 사용) |
 | Secret | `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY` | EC2 주소, 접속 사용자(ubuntu), 개인 키(PEM 전체) |
 | Secret | `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID` | (선택) Git 연동 대신 Actions로 Netlify 배포 |
-| Variable | `RENDER_URL` | `https://buytiming.onrender.com` (Render 가격 수집 대상) |
-| Variable | `EC2_APP_DIR` | 기본 `~/buytiming` |
+| Variable | `RENDER_URL` | `https://picktiming.onrender.com` (Render 가격 수집 대상) |
+| Variable | `EC2_APP_DIR` | 기본 `~/picktiming` |
 | Variable | `EC2_MODE` | `full`(기본) 또는 `rpa-only` |
 
 등록하지 않은 대상은 자동으로 건너뜁니다.
