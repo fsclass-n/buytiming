@@ -1,6 +1,7 @@
-# Render 단독 풀스택 이미지: FastAPI + 프런트엔드 정적 파일을 같은 도메인으로 제공
+# Render 단독 풀스택 이미지: FastAPI + React 빌드 결과를 같은 도메인으로 제공
+# 저장소 루트의 Dockerfile = Render 기본값이라 대시보드의 Dockerfile Path를 비워 두거나 ./Dockerfile로 두면 된다.
 # 빌드 컨텍스트는 저장소 루트(.)이며, 루트 .dockerignore가 필요한 파일만 남긴다.
-#   docker build -f backend/Dockerfile.render -t buytiming-render .
+#   docker build -t buytiming-render .
 # EC2·CI용 API 이미지는 backend/Dockerfile(같은 저장소 루트 컨텍스트)을 사용한다.
 # 1단계: React 빌드
 FROM node:22-alpine AS web

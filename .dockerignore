@@ -2,7 +2,7 @@
 *
 !requirements.txt
 !backend/Dockerfile
-!backend/Dockerfile.render
+!Dockerfile
 !backend/app/
 !rpa/Dockerfile
 !rpa/collector/

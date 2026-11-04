@@ -7,7 +7,7 @@ services:
   - type: web
     name: buytiming
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile.render
+    dockerfilePath: ./Dockerfile
     dockerContext: .
     region: singapore
     plan: free
@@ -17,6 +17,7 @@ services:
       paths:
         - backend/**
         - frontend/**
+        - Dockerfile
         - render.yaml
         - .dockerignore
         - requirements.txt

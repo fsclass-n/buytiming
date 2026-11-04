@@ -45,7 +45,7 @@ buytiming/
 │   ├── app/seed.py           # 시연 데이터
 │   ├── tests/                # pytest 29건
 │   ├── Dockerfile            # EC2·CI용 API 이미지 (컨텍스트 ./backend)
-│   └── Dockerfile.render     # Render용 풀스택 이미지: API + frontend/ (컨텍스트 = 저장소 루트)
+│   └── Dockerfile     # Render용 풀스택 이미지: API + frontend/ (컨텍스트 = 저장소 루트)
 ├── rpa/                      # 가격 수집기 (EC2 컨테이너)
 │   ├── collector/            # http, parsers, jobs, scheduler, api_client
 │   ├── malls.json            # 쇼핑몰별 CSS 셀렉터
@@ -54,7 +54,7 @@ buytiming/
 │   └── Dockerfile
 ├── deploy/                   # nginx.conf, config.same-origin.js, ec2-setup.sh
 ├── docker-compose.yml        # EC2: web(nginx) + api + rpa (DB는 TiDB)
-├── render.yaml               # Render Blueprint (서비스 이름 buytiming, Dockerfile.render)
+├── render.yaml               # Render Blueprint (서비스 이름 buytiming, Dockerfile)
 ├── .dockerignore             # 저장소 루트 컨텍스트 빌드(Render)에 backend/app·frontend만 포함
 ├── netlify.toml              # Netlify (base=frontend, 데모 모드)
 ├── .github/                  # ci.yml, deploy.yml, collect-render.yml, scripts/detect-changes.sh
@@ -97,7 +97,7 @@ Netlify(buytiming.netlify.app): 데모 모드 — 브라우저 목업 데이터�
 | DB | **TiDB** | 없음 | **TiDB** | **TiDB** (세 곳 같은 DB) |
 | 프런트엔드 제공 | FastAPI(StaticFiles, 저장소 `frontend/` 자동) | Netlify CDN | FastAPI(StaticFiles) | nginx |
 | API 주소(프런트) | 같은 도메인(`/`) | 없음(데모 모드) | 같은 도메인(`/`) | 같은 도메인(`/`) |
-| 실행 방식 | `uvicorn` | 정적 호스팅 | `backend/Dockerfile.render` (컨텍스트: 저장소 루트) | `backend/Dockerfile`, `rpa/Dockerfile` (compose) |
+| 실행 방식 | `uvicorn` | 정적 호스팅 | `Dockerfile(저장소 루트)` (컨텍스트: 저장소 루트) | `backend/Dockerfile`, `rpa/Dockerfile` (compose) |
 | RPA | 수동 실행 | 없음 | GitHub Actions 예약 실행 | 컨테이너 상주 |
 | 설정 값 | 루트 `.env` | 없음 | **같은 `.env`** 를 Environment에 붙여 넣기 | **같은 `.env`** 를 `~/buytiming/.env`로 복사 |
 | 배포 | — | Netlify Git 연동 | 커밋 → CI 통과 → Render Auto-Deploy | 커밋 → CI 통과 → GitHub Actions SSH |

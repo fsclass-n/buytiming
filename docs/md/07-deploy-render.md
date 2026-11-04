@@ -1,7 +1,7 @@
 # 07. [배포 2단계] Render — 단독 풀스택 (https://buytiming.onrender.com)
 
 Render 서비스 하나가 **API와 프런트엔드 화면을 같은 도메인으로** 제공합니다.
-이미지: [`backend/Dockerfile.render`](../../backend/Dockerfile.render) (빌드 컨텍스트 = 저장소 루트, 루트 [`.dockerignore`](../../.dockerignore)로 `backend/app`·`frontend/`만 포함).
+이미지: [`Dockerfile(저장소 루트)`](../../Dockerfile) (빌드 컨텍스트 = 저장소 루트, 루트 [`.dockerignore`](../../.dockerignore)로 `backend/app`·`frontend/`만 포함).
 가격 수집은 GitHub Actions가 매시 대신 실행합니다(10 문서).
 
 준비물: 값을 채운 로컬 `.env`(06 문서, [`.env.example`](../../.env.example) 기반), GitHub 저장소 `fsclass-n/buytiming` 접근 권한
@@ -19,7 +19,7 @@ Render 대시보드에서 이미 `buytiming` 서비스를 만들었다면 **Sett
 | Branch | `main` |
 | Region | **Singapore** |
 | Root Directory | (비움) |
-| Dockerfile Path | **`./backend/Dockerfile.render`** |
+| Dockerfile Path | **`./Dockerfile`** |
 | Docker Build Context Directory | **`.`** (저장소 루트) |
 | Instance Type | **Free** |
 | Health Check Path | `/health` |

@@ -5,7 +5,7 @@
 | 이미지 | Dockerfile | 빌드 컨텍스트 | 내용 | 사용처 |
 |---|---|---|---|---|
 | API | [`backend/Dockerfile`](../../backend/Dockerfile) | `./backend` | API만 (프런트엔드는 nginx가 담당) | EC2, CI |
-| 풀스택 | [`backend/Dockerfile.render`](../../backend/Dockerfile.render) | 저장소 루트 `.` | API + `frontend/` (`FRONTEND_DIR=/app/frontend`) | Render |
+| 풀스택 | [`Dockerfile(저장소 루트)`](../../Dockerfile) | 저장소 루트 `.` | API + `frontend/` (`FRONTEND_DIR=/app/frontend`) | Render |
 
 저장소 루트를 컨텍스트로 쓰는 Render 빌드는 루트 [`.dockerignore`](../../.dockerignore)가 `backend/app`, `backend/requirements.txt`, `frontend/`만 남깁니다.
 
@@ -43,7 +43,7 @@ Docker 실행 명령은 `uvicorn app.main:app --port ${PORT:-8000}` 입니다. R
 | `ADMIN_EMAILS` | (없음) | 선택 | 이 이메일로 가입하면 관리자 |
 | `GEMINI_API_KEY` | (없음) | 선택 | 비우면 규칙 기반 템플릿 문장으로 동작 |
 | `GEMINI_MODEL`, `AI_DAILY_LIMIT`, `JWT_EXPIRE_MINUTES`, `TZ` | gemini-2.5-flash, 20, 60, Asia/Seoul | 넣지 않음 | 기본값 사용 |
-| `FRONTEND_DIR` | (없음 → 저장소 `frontend/` 자동 탐색) | **넣지 않음** | Render는 `Dockerfile.render`에 `/app/frontend`로 설정됨. Render 환경 변수에 넣으면 이 값을 덮어씀 |
+| `FRONTEND_DIR` | (없음 → 저장소 `frontend/` 자동 탐색) | **넣지 않음** | Render는 `Dockerfile`에 `/app/frontend`로 설정됨. Render 환경 변수에 넣으면 이 값을 덮어씀 |
 
 ## 3. DB 테이블 12개
 

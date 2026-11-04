@@ -39,7 +39,7 @@ buytiming/
 │   ├── app/seed.py        # 시연 데이터(쇼핑몰 3곳·상품 12종·120일)
 │   ├── tests/             # pytest 29건
 │   ├── Dockerfile         # EC2·CI용 API 이미지
-│   ├── Dockerfile.render  # Render용 풀스택 이미지(API + frontend, 컨텍스트 = 저장소 루트)
+│   ├── Dockerfile  # Render용 풀스택 이미지(API + frontend, 컨텍스트 = 저장소 루트)
 │   ├── requirements.txt · requirements-dev.txt
 ├── rpa/                   # 수집기 (EC2 컨테이너 스케줄러 / Render용은 GitHub Actions 예약 실행)
 │   ├── collector/         # http(robots.txt·간격·재시도), parsers, jobs, scheduler
@@ -100,7 +100,7 @@ ruff check backend rpa
 
 ## 3. Render — 단독 풀스택 (API + 프런트엔드)
 
-1. Render 웹 서비스(Docker): Dockerfile Path `./backend/Dockerfile.render`, Build Context `.`, Health Check `/health` (`render.yaml`과 동일).
+1. Render 웹 서비스(Docker): Dockerfile Path `./Dockerfile`, Build Context `.`, Health Check `/health` (`render.yaml`과 동일).
 2. 환경 변수: Environment → **Add from .env** → 로컬 `.env` 내용을 그대로 붙여 넣습니다(`FRONTEND_DIR`은 넣지 않음).
 3. Auto-Deploy: **After CI Checks Pass** — 커밋하면 GitHub Actions CI 통과 후 자동 배포. Build Filters Included Paths: `backend/**`, `frontend/**`, `render.yaml`, `.dockerignore`.
    (이 경우 GitHub Secret `RENDER_DEPLOY_HOOK_URL`은 등록하지 않음 — 중복 배포 방지)

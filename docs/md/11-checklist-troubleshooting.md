@@ -10,7 +10,7 @@
 
 ### Render — 단독 풀스택 (07)
 - [ ] 서비스 이름 `buytiming`, Docker, Singapore, Free, Health Check `/health`
-- [ ] Dockerfile Path `./backend/Dockerfile.render`, Build Context `.`
+- [ ] Dockerfile Path `./Dockerfile`, Build Context `.`
 - [ ] Environment → **Add from .env**로 로컬 `.env` 붙여 넣기 (`FRONTEND_DIR`은 넣지 않음)
 - [ ] Auto-Deploy **After CI Checks Pass**, Build Filters Included Paths `backend/**`, `frontend/**`, `render.yaml`, `.dockerignore`
 - [ ] `/health` → `"status":"ok"`, `/` → 홈 화면, `/js/config.js` → `API_BASE_URL: "/"`
@@ -47,7 +47,7 @@
 | `(1049, "Unknown database 'buytiming'")` | api 로그 | TiDB에서 `CREATE DATABASE buytiming;` |
 | `Can't connect to MySQL server ... timed out` | api 로그 | TiDB 허용 IP 목록에 Render/EC2 IP 없음 |
 | `Lost connection to MySQL server during query` (가끔) | api 로그 | TiDB Starter 유휴 연결 정리 — `pool_pre_ping`·`pool_recycle`로 자동 재연결됨. 반복되면 보고 |
-| Render `/`가 화면 대신 `{"service":"BuyTiming API",...}` JSON | Render Settings | Dockerfile Path가 `./backend/Dockerfile`(API 전용)로 되어 있음 → `./backend/Dockerfile.render`, Build Context `.` |
+| Render `/`가 화면 대신 `{"service":"BuyTiming API",...}` JSON | Render Settings | Dockerfile Path가 `./backend/Dockerfile`(API 전용)로 되어 있음 → `./Dockerfile`, Build Context `.` |
 | Render 화면이 "데모 모드" 배너로 뜸 | `/js/config.js` | 위와 같은 원인(예전 이미지). 설정 변경 후 재배포 |
 | 화면: "API 서버에 연결할 수 없습니다" | 브라우저 F12 콘솔·Network | 같은 도메인 호출이라 CORS 문제는 아님 → `/health` 응답과 서버 로그 확인 |
 | Render 첫 화면이 1분 가까이 멈춤 | — | 무료 플랜이 잠들었다 깨는 중. 정상 |

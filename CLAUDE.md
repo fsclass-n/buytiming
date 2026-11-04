@@ -18,7 +18,7 @@ Render 배포는 Auto-Deploy "After CI Checks Pass", EC2 배포는 `deploy.yml`.
 |---|---|---|
 | `frontend/` | HTML + Vanilla JS(ES Modules) + Bootstrap 5, 번들러 없음 | Netlify, Render(풀스택 이미지), EC2(nginx, git pull) |
 | `netlify.toml` | Netlify 설정 (base=frontend) | Netlify |
-| `backend/` | Python 3.11 · FastAPI · SQLAlchemy. `Dockerfile`(EC2·CI용 API), `Dockerfile.render`(Render용 API+프런트) | Render, EC2(api) |
+| `backend/` | Python 3.11 · FastAPI · SQLAlchemy. `Dockerfile`(EC2·CI용 API), `Dockerfile`(Render용 API+프런트) | Render, EC2(api) |
 | `render.yaml`, `.dockerignore`(루트) | Render Blueprint, Render 빌드 컨텍스트(저장소 루트) 필터 | Render |
 | `rpa/` | 가격 수집기(Requests · BeautifulSoup), Docker | EC2(rpa) |
 | `docker-compose.yml` | EC2 전체 스택(web + api + rpa, DB는 TiDB) | EC2 전체 재빌드 |
