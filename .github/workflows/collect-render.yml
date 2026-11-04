@@ -70,6 +70,8 @@ jobs:
       RPA_API_KEY: ${{ secrets.RENDER_RPA_API_KEY }}
       KCA_API_URL: ${{ vars.KCA_API_URL }}
       DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
+      NAVER_SEARCH_CLIENT_ID: ${{ secrets.NAVER_SEARCH_CLIENT_ID }}
+      NAVER_SEARCH_CLIENT_SECRET: ${{ secrets.NAVER_SEARCH_CLIENT_SECRET }}
       JOBS: ${{ needs.plan.outputs.jobs }}
     steps:
       - uses: actions/checkout@v4

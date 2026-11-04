@@ -112,3 +112,11 @@ def test_s3_upload_is_skipped_without_bucket():
     from collector import storage
 
     assert storage.upload("", "k", b"x", "text/plain") is None
+
+
+def test_naver_search_keys_take_precedence(monkeypatch):
+    monkeypatch.setenv("NAVER_CLIENT_ID", "login-id")
+    monkeypatch.setenv("NAVER_SEARCH_CLIENT_ID", "search-id")
+    monkeypatch.setenv("NAVER_SEARCH_CLIENT_SECRET", "search-secret")
+    cfg = Config()
+    assert cfg.naver_client_id == "search-id" and cfg.naver_enabled

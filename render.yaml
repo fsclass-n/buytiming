@@ -38,6 +38,21 @@ services:
       - key: AI_DAILY_LIMIT
         value: "20"
       - key: ALLOWED_ORIGINS       # .env와 같은 값(세 환경 주소)
-        value: https://buytiming.onrender.com,http://buytiming.duckdns.org,http://localhost:8000
+        value: https://buytiming.onrender.com,http://buytiming.duckdns.org,http://localhost:8000,http://localhost:5173
       - key: ADMIN_EMAILS
+        sync: false
+      - key: DEMO_LOGIN_ENABLED    # 로그인 화면의 테스트 계정 버튼
+        value: "true"
+      # 소셜 로그인(선택) — 값은 대시보드에서 입력. 비어 있으면 해당 버튼만 비활성
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: NAVER_CLIENT_ID
+        sync: false
+      - key: NAVER_CLIENT_SECRET
+        sync: false
+      - key: KAKAO_CLIENT_ID
+        sync: false
+      - key: KAKAO_CLIENT_SECRET
         sync: false

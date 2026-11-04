@@ -24,8 +24,9 @@ class Config:
     report_dir: pathlib.Path = field(default_factory=lambda: pathlib.Path(os.getenv("REPORT_DIR", ROOT / "reports")))
     tz: str = field(default_factory=lambda: os.getenv("TZ", "Asia/Seoul"))
     # 네이버 쇼핑 검색 OpenAPI (developers.naver.com) — 값이 있으면 '네이버쇼핑' 가격을 함께 수집
-    naver_client_id: str = field(default_factory=lambda: os.getenv("NAVER_CLIENT_ID", ""))
-    naver_client_secret: str = field(default_factory=lambda: os.getenv("NAVER_CLIENT_SECRET", ""))
+    #   NAVER_SEARCH_CLIENT_*가 없으면 네이버 로그인용 NAVER_CLIENT_*를 사용(같은 애플리케이션에 '검색' API를 추가한 경우)
+    naver_client_id: str = field(default_factory=lambda: os.getenv("NAVER_SEARCH_CLIENT_ID") or os.getenv("NAVER_CLIENT_ID", ""))
+    naver_client_secret: str = field(default_factory=lambda: os.getenv("NAVER_SEARCH_CLIENT_SECRET") or os.getenv("NAVER_CLIENT_SECRET", ""))
     # AWS S3 (선택) — 값이 있으면 수집 원본·주간 리포트를 업로드
     s3_bucket: str = field(default_factory=lambda: os.getenv("S3_BUCKET", ""))
     s3_prefix: str = field(default_factory=lambda: os.getenv("S3_PREFIX", "buytiming").strip("/"))
