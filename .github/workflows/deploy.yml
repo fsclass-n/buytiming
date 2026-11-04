@@ -54,7 +54,7 @@ jobs:
 
   changes:
     name: 변경 경로 판별
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       netlify: ${{ steps.diff.outputs.netlify }}
       render: ${{ steps.diff.outputs.render }}
@@ -80,7 +80,7 @@ jobs:
     name: Render (FastAPI)
     needs: [ci, changes]
     if: needs.changes.outputs.render == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
       HEALTH: ${{ vars.RENDER_HEALTH_URL }}
@@ -105,7 +105,7 @@ jobs:
     if: >-
       !cancelled() && needs.ci.result == 'success' && needs.changes.outputs.ec2 == 'true' &&
       (needs.render.result == 'success' || needs.render.result == 'skipped')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       HOST: ${{ secrets.EC2_HOST }}
       USER: ${{ secrets.EC2_USER }}
@@ -158,7 +158,7 @@ jobs:
     name: Netlify (frontend)
     needs: [ci, changes]
     if: needs.changes.outputs.netlify == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       SITE: ${{ secrets.NETLIFY_SITE_ID }}

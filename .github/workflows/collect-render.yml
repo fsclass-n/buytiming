@@ -33,7 +33,7 @@ env:
 jobs:
   plan:
     name: 실행할 작업 결정
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       jobs: ${{ steps.plan.outputs.jobs }}
     steps:
@@ -63,7 +63,7 @@ jobs:
     name: 수집기 실행 → Render API
     needs: plan
     if: needs.plan.outputs.jobs != ''
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       RPA_TARGET_API: ${{ vars.RENDER_URL }}
