@@ -6,13 +6,13 @@ def test_health(client):
 
 
 def test_signup_login_me(client):
-    body = {"email": "new@test.com", "password": "password12", "name": "신규"}
+    body = {"email": "new@test.com", "password": "Passw0rd!x", "name": "신규"}
     assert client.post(f"{API}/auth/signup", json=body).status_code == 201
     dup = client.post(f"{API}/auth/signup", json=body)
     assert dup.status_code == 409 and dup.json()["code"] == "EMAIL_EXISTS"
     bad = client.post(f"{API}/auth/login", json={"email": "new@test.com", "password": "wrong-pass"})
     assert bad.status_code == 401 and bad.json()["code"] == "INVALID_CREDENTIALS"
-    tok = client.post(f"{API}/auth/login", json={"email": "new@test.com", "password": "password12"}).json()["access_token"]
+    tok = client.post(f"{API}/auth/login", json={"email": "new@test.com", "password": "Passw0rd!x"}).json()["access_token"]
     assert client.get(f"{API}/users/me", headers={"Authorization": f"Bearer {tok}"}).json()["role"] == "USER"
 
 

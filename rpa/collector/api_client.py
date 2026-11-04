@@ -16,6 +16,10 @@ class ApiClient:
         r.raise_for_status()
         return r
 
+    def ensure_listings(self, name: str, base_url: str, url_template: str) -> dict:
+        """쇼핑몰(예: 네이버쇼핑)과 모든 상품의 판매처를 없으면 만든다"""
+        return self._req("POST", "/ensure-listings", json={"name": name, "base_url": base_url, "url_template": url_template}).json()
+
     def listings(self) -> list[dict]:
         return self._req("GET", "/listings").json()["items"]
 

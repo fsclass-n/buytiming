@@ -5,6 +5,12 @@ import tempfile
 import pytest
 
 _TMP = pathlib.Path(tempfile.mkdtemp(prefix="buytiming-test-"))
+# React 빌드 결과(frontend/dist)와 같은 모양의 임시 폴더 — CI에서는 npm 빌드 없이 백엔드만 테스트한다
+_DIST = _TMP / "dist"
+(_DIST / "assets").mkdir(parents=True)
+(_DIST / "index.html").write_text('<!doctype html><title>바이타이밍</title><script src="/js/config.js"></script><div id="root"></div>',
+                                  encoding="utf-8")
+(_DIST / "assets" / "app.js").write_text("console.log('app')", encoding="utf-8")
 # CI의 MySQL 통합 테스트는 TEST_DATABASE_URL로 지정, 기본은 임시 SQLite
 os.environ.update({
     "DATABASE_URL": os.getenv("TEST_DATABASE_URL") or f"sqlite:///{(_TMP / 'test.db').as_posix()}",
@@ -15,7 +21,8 @@ os.environ.update({
     "SEED_ADMIN_PASSWORD": "admin-pass-1",
     "APP_ENV": "test",
     # Render 단독 풀스택 구성(프런트엔드 동시 서빙)으로 전체 테스트를 실행한다
-    "FRONTEND_DIR": str(pathlib.Path(__file__).resolve().parents[2] / "frontend"),
+    "FRONTEND_DIR": str(_DIST),
+    "DEMO_LOGIN_ENABLED": "true",
 })
 
 from fastapi.testclient import TestClient  # noqa: E402

@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .config import get_settings
 from .database import engine, init_db
@@ -41,10 +42,24 @@ def health():
 
 SECURITY_HEADERS = {"X-Frame-Options": "DENY", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin"}
 
-# Render(FRONTEND_DIR=/app/frontend)·로컬(저장소의 frontend/)은 프런트엔드와 API를 같은 도메인으로 제공. EC2 api 컨테이너는 폴더가 없어 API만(nginx가 화면 담당)
-FRONTEND_DIR = Path(settings.frontend_dir or Path(__file__).resolve().parents[2] / "frontend")
+# Render(FRONTEND_DIR=/app/frontend)·로컬(저장소의 frontend/dist = npm run build 결과)은 프런트엔드와 API를 같은 도메인으로 제공.
+# EC2 api 컨테이너는 폴더가 없어 API만 제공(화면은 nginx 담당)
+FRONTEND_DIR = Path(settings.frontend_dir or Path(__file__).resolve().parents[2] / "frontend" / "dist")
 
-if FRONTEND_DIR.is_dir():
+
+class SPAStaticFiles(StaticFiles):
+    """React(SPA) 라우팅: /search 같은 화면 경로는 index.html로, 확장자가 있는 파일만 실제 404"""
+
+    async def get_response(self, path: str, scope):
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            if exc.status_code != 404 or "." in path.rsplit("/", 1)[-1]:
+                raise
+            return await super().get_response("index.html", scope)
+
+
+if FRONTEND_DIR.is_dir() and (FRONTEND_DIR / "index.html").is_file():
     @app.middleware("http")
     async def security_headers(request: Request, call_next):
         response = await call_next(request)
@@ -57,7 +72,7 @@ if FRONTEND_DIR.is_dir():
         return Response('window.APP_CONFIG = { API_BASE_URL: "/" };\n', media_type="application/javascript",
                         headers={"Cache-Control": "no-cache"})
 
-    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+    app.mount("/", SPAStaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 else:
     @app.get("/", include_in_schema=False)
     def root():

@@ -1,3 +1,5 @@
+# FastAPI API 이미지 (EC2 compose의 api, CI). 빌드 컨텍스트 = 저장소 루트
+#   docker build -f backend/Dockerfile -t buytiming-api .
 FROM python:3.11.9-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -14,7 +16,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY app ./app
+COPY backend/app ./app
 RUN useradd --create-home appuser && mkdir -p /app/data && chown -R appuser /app
 USER appuser
 

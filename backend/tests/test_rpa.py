@@ -74,3 +74,13 @@ def test_model_upload_and_weekly_report(client):
     rep = client.get(f"{API}/reports/weekly", headers=RPA)
     assert rep.status_code == 200 and rep.content[:2] == b"PK"  # xlsx(zip)
     assert client.post(f"{API}/train", headers=RPA).status_code == 202
+
+
+def test_ensure_listings_is_idempotent(client):
+    body = {"name": "네이버쇼핑", "base_url": "https://search.shopping.naver.com",
+            "url_template": "https://search.shopping.naver.com/search/all?query={query}"}
+    first = client.post(f"{API}/ensure-listings", headers=RPA, json=body).json()
+    again = client.post(f"{API}/ensure-listings", headers=RPA, json=body).json()
+    assert first["created"] >= 12 and again["created"] == 0 and first["mall_id"] == again["mall_id"]
+    urls = [i["url"] for i in client.get(f"{API}/listings", headers=RPA).json()["items"] if i["mall"] == "네이버쇼핑"]
+    assert any("query=" in u and "%20" in u for u in urls)

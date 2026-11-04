@@ -1,13 +1,17 @@
 from datetime import datetime, time, timedelta
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ..config import get_settings, now_local
 from ..database import get_db
-from ..models import AiAdviceLog, ModelVersion, Product, RpaJobLog, User
+from ..errors import ApiError
+from ..models import AiAdviceLog, ModelVersion, Product, RpaJobLog, User, Watchlist
+from ..schemas import RoleIn
 from ..security import admin_user
+
+DEMO_ADMIN = "admin@buytiming.demo"
 
 router = APIRouter(prefix="/admin", tags=["관리자"])
 
@@ -67,3 +71,47 @@ def ai_metrics(db: Session = Depends(get_db), _: User = Depends(admin_user)):
         "recent": [{"created_at": l.created_at, "type": l.type, "product": name, "latency_ms": l.latency_ms,
                     "cache_hit": l.cache_hit, "validation": l.validation} for l, name in rows[:20]],
     }
+
+
+# ---------------------------------------------------------------- 회원 관리
+def _user_view(u: User, watch_count: int = 0) -> dict:
+    return {"id": u.id, "email": u.email, "name": u.name, "role": u.role, "created_at": u.created_at, "watch_count": watch_count}
+
+
+@router.get("/users")
+def list_users(q: str = Query("", max_length=100), role: str = Query("", pattern="^(|USER|ADMIN)$"),
+               page: int = Query(1, ge=1), size: int = Query(20, ge=1, le=100),
+               db: Session = Depends(get_db), _: User = Depends(admin_user)):
+    """회원 목록: 이름·이메일 검색, 권한 필터, 페이지 나눔"""
+    stmt = select(User)
+    if q.strip():
+        like = f"%{q.strip()}%"
+        stmt = stmt.where(or_(User.email.ilike(like), User.name.ilike(like)))
+    if role:
+        stmt = stmt.where(User.role == role)
+    total = db.execute(select(func.count()).select_from(stmt.subquery())).scalar_one()
+    users = db.execute(stmt.order_by(User.id.desc()).offset((page - 1) * size).limit(size)).scalars().all()
+    counts = dict(db.execute(select(Watchlist.user_id, func.count()).where(Watchlist.user_id.in_([u.id for u in users]))
+                             .group_by(Watchlist.user_id)).all()) if users else {}
+    admins = db.execute(select(func.count()).select_from(User).where(User.role == "ADMIN")).scalar_one()
+    return {"items": [_user_view(u, counts.get(u.id, 0)) for u in users], "total": total, "page": page, "size": size,
+            "summary": {"users": db.execute(select(func.count()).select_from(User)).scalar_one(), "admins": admins}}
+
+
+@router.patch("/users/{user_id}/role")
+def change_role(user_id: int, body: RoleIn, db: Session = Depends(get_db), actor: User = Depends(admin_user)):
+    """회원 권한 변경(일반 사용자 ↔ 관리자)"""
+    if actor.email == DEMO_ADMIN:
+        raise ApiError(403, "DEMO_READ_ONLY", "테스트 관리자 계정은 회원 권한을 변경할 수 없습니다(조회만 가능).")
+    target = db.get(User, user_id)
+    if target is None:
+        raise ApiError(404, "NOT_FOUND", "회원을 찾을 수 없습니다.")
+    if target.id == actor.id:
+        raise ApiError(400, "SELF_ROLE_CHANGE", "자기 자신의 권한은 변경할 수 없습니다.")
+    if target.role == "ADMIN" and body.role == "USER":
+        admins = db.execute(select(func.count()).select_from(User).where(User.role == "ADMIN")).scalar_one()
+        if admins <= 1:
+            raise ApiError(400, "LAST_ADMIN", "마지막 관리자는 일반 사용자로 바꿀 수 없습니다.")
+    target.role = body.role
+    db.commit()
+    return _user_view(target)

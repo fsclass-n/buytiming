@@ -19,6 +19,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 import requests
 
+from . import naver, storage
 from .api_client import ApiClient
 from .config import Config
 from .http import CollectError, PoliteSession
@@ -56,6 +57,8 @@ def clean(rows: list[dict], listings: dict[int, dict]) -> pd.DataFrame:
 
 def collect(cfg: Config, api: ApiClient) -> dict:
     started = now(cfg)
+    if cfg.naver_enabled and hasattr(api, "ensure_listings"):
+        api.ensure_listings(**naver.NAVER_MALL)  # 모든 상품에 '네이버쇼핑' 판매처가 있도록 보장(없으면 생성)
     listings = {l["listing_id"]: l for l in api.listings()}
     rules = cfg.mall_rules()
     session = PoliteSession(cfg.user_agent, cfg.request_interval_sec)
@@ -68,14 +71,26 @@ def collect(cfg: Config, api: ApiClient) -> dict:
                     skipped += 1
                     continue
                 rows.append({"listing_id": l["listing_id"], **simulated_price(l, started)})
+            elif naver.is_naver(l["url"]):
+                if not cfg.naver_enabled:
+                    skipped += 1
+                    continue
+                session.wait()
+                p = naver.fetch_price(l["url"], cfg.naver_client_id, cfg.naver_client_secret, session.s)
+                rows.append({"listing_id": l["listing_id"], "price": p["price"], "shipping_fee": p["shipping_fee"], "in_stock": p["in_stock"]})
             elif l["mall"] in rules:
-                rows.append({"listing_id": l["listing_id"], **parse_product(session.fetch(l["url"]), rules[l["mall"]])})
+                rule = rules[l["mall"]]
+                rows.append({"listing_id": l["listing_id"], **parse_product(session.fetch(l["url"], render=rule.get("render") == "playwright",
+                                                                                          wait_for=rule.get("price")), rule)})
             else:
                 skipped += 1  # 셀렉터 규칙이 없는 쇼핑몰은 수집하지 않음
-        except CollectError as exc:
+        except (CollectError, naver.NaverError, requests.RequestException) as exc:
             failed += 1
             errors.append(str(exc))
     df = clean(rows, listings)
+    if len(df):
+        storage.upload(cfg.s3_bucket, f"{cfg.s3_prefix}/raw/{started:%Y/%m/%d/%H%M}.json", df.to_json(orient="records", force_ascii=False).encode(),
+                       "application/json", cfg.aws_region)
     result = api.post_prices(df.to_dict("records"), started) if len(df) else {"inserted": 0}
     status = "SUCCESS" if failed == 0 else ("PARTIAL" if len(df) else "FAIL")
     msg = f"수집 {len(df)}건, 실패 {failed}건, 건너뜀 {skipped}건" + (f" / {errors[0]}" if errors else "")
@@ -130,8 +145,10 @@ def report(cfg: Config, api: ApiClient) -> dict:
     data, name = api.weekly_report()
     cfg.report_dir.mkdir(parents=True, exist_ok=True)
     (cfg.report_dir / name).write_bytes(data)
-    api.log("weekly_report", "SUCCESS", now(cfg), now(cfg), collected=1, message=f"{name} 저장")
-    return {"status": "SUCCESS", "file": str(cfg.report_dir / name)}
+    s3 = storage.upload(cfg.s3_bucket, f"{cfg.s3_prefix}/reports/{name}", data,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", cfg.aws_region)
+    api.log("weekly_report", "SUCCESS", now(cfg), now(cfg), collected=1, message=f"{name} 저장" + (f" · {s3}" if s3 else ""))
+    return {"status": "SUCCESS", "file": str(cfg.report_dir / name), "s3": s3}
 
 
 JOBS = {"collect": collect, "public": collect_public, "train": train, "report": report}

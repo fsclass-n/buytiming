@@ -23,6 +23,18 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.5-flash"
     ai_daily_limit: int = 20
 
+    # 테스트 계정 간편 로그인(시드의 demo@·admin@buytiming.demo). 시연용 — 실제 운영에서는 false
+    demo_login_enabled: bool = False
+
+    # 소셜 로그인(OAuth). 값이 있는 제공자만 버튼이 활성화된다. 콜백 주소: <서비스 주소>/api/v1/auth/oauth/<provider>/callback
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    naver_client_id: str = ""
+    naver_client_secret: str = ""
+    kakao_client_id: str = ""  # 카카오 REST API 키
+    kakao_client_secret: str = ""  # 카카오 Client Secret(사용 설정한 경우만)
+    public_base_url: str = ""  # OAuth 콜백 주소의 기준. 비우면 요청 주소(프록시 헤더 반영)를 사용
+
     allowed_origins: str = "*"  # 쉼표 구분 (예: https://buytiming.netlify.app)
     tz: str = "Asia/Seoul"
     # 프런트엔드 정적 파일 폴더. 비우면 저장소의 frontend/를 찾아 있으면(로컬) 서빙, 없으면(EC2 api 컨테이너) API만 제공

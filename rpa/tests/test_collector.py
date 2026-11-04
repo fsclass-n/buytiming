@@ -81,3 +81,34 @@ def test_collect_simulated_and_skips_unconfigured(monkeypatch):
     res = jobs.collect(Config(), api)
     assert res["inserted"] == 1 and res["skipped"] == 1 and api.posted[0]["listing_id"] == 1
     assert api.logs[0][0][0] == "collect_prices"
+
+
+def test_naver_lowest_price_and_query():
+    from collector import naver
+
+    url = naver.search_url("무선 이어폰 X2")
+    assert naver.is_naver(url) and naver.query_of(url) == "무선 이어폰 X2"
+    p = naver.lowest_price([{"lprice": "0"}, {"lprice": "129000", "title": "<b>X2</b>"}])
+    assert p["price"] == 129000 and p["in_stock"]
+    assert naver.lowest_price([])["in_stock"] is False
+
+
+def test_collect_uses_naver_api_when_configured(monkeypatch):
+    from collector import naver
+
+    monkeypatch.setenv("NAVER_CLIENT_ID", "id")
+    monkeypatch.setenv("NAVER_CLIENT_SECRET", "secret")
+    monkeypatch.setattr(naver, "fetch_price", lambda url, cid, sec, s=None: {"price": 9900, "shipping_fee": 0, "in_stock": True})
+    api = FakeApi([{"listing_id": 3, "mall": "네이버쇼핑", "url": naver.search_url("생수"), "last_price": 9800, "last_shipping_fee": 0}])
+    api.ensured = []
+    api.ensure_listings = lambda **kw: api.ensured.append(kw) or {"created": 0}
+    cfg = Config()
+    monkeypatch.setattr(cfg.__class__, "request_interval_sec", 0, raising=False)
+    res = jobs.collect(cfg, api)
+    assert res["inserted"] == 1 and api.posted[0]["price"] == 9900 and api.ensured[0]["name"] == "네이버쇼핑"
+
+
+def test_s3_upload_is_skipped_without_bucket():
+    from collector import storage
+
+    assert storage.upload("", "k", b"x", "text/plain") is None

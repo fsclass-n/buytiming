@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+/* 서체 2종: 제목(display) Black Han Sans · 본문(sans) Pretendard */
+@theme {
+  --font-sans: "Pretendard Variable", Pretendard, "Malgun Gothic", system-ui, sans-serif;
+  --font-display: "Black Han Sans", "Pretendard Variable", sans-serif;
+  --color-brand-50: #f4f0ff;
+  --color-brand-100: #e9e1ff;
+  --color-brand-500: #7c4dff;
+  --color-brand-600: #6a3cf0;
+  --color-brand-700: #5527d6;
+  --color-brand-900: #2a1170;
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { @apply bg-slate-50 font-sans text-slate-800 antialiased; }
+  h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
+}
+
+/* Tailwind v4: 다른 클래스에서 @apply로 재사용하려면 @utility로 정의해야 한다 */
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@layer components {
+  .container-x { @apply mx-auto w-full max-w-6xl px-4 sm:px-6; }
+  .card { @apply rounded-2xl border border-slate-200 bg-white shadow-sm; }
+  .btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-700; }
+  .btn-outline { @apply btn border border-slate-300 bg-white text-slate-700 hover:border-brand-500 hover:text-brand-600; }
+  .btn-ghost { @apply btn text-slate-600 hover:bg-slate-100; }
+  .input { @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100; }
+  .badge { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+  .section-title { @apply mb-4 mt-10 flex items-center gap-2 text-xl text-slate-900; }
+  .table-x { @apply w-full text-left text-sm; }
+  .table-x th { @apply whitespace-nowrap border-b border-slate-200 px-3 py-2.5 font-semibold text-slate-500; }
+  .table-x td { @apply border-b border-slate-100 px-3 py-2.5; }
+  .skeleton { @apply mb-2 h-4 animate-pulse rounded bg-slate-200; }
+}
+
+/* 햄버거 ↔ X 아이콘 전환 */
+.burger span { @apply absolute left-0 block h-0.5 w-6 rounded bg-current transition-all duration-300; }
+.burger span:nth-child(1) { top: 4px; }
+.burger span:nth-child(2) { top: 11px; }
+.burger span:nth-child(3) { top: 18px; }
+.burger.open span:nth-child(1) { top: 11px; transform: rotate(45deg); }
+.burger.open span:nth-child(2) { opacity: 0; transform: translateX(8px); }
+.burger.open span:nth-child(3) { top: 11px; transform: rotate(-45deg); }

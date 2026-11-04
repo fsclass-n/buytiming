@@ -1,6 +1,12 @@
+import re
 from datetime import date, datetime
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+# 상용 서비스 표준: 영문 대문자·소문자·숫자·특수문자를 모두 포함해 8자 이상
+PASSWORD_RULE = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9\s]).{8,72}$")
+PASSWORD_MESSAGE = "비밀번호는 영문 대문자·소문자·숫자·특수문자를 모두 포함해 8자 이상이어야 합니다."
 
 
 class ORM(BaseModel):
@@ -10,8 +16,23 @@ class ORM(BaseModel):
 # ---------------------------------------------------------------- 인증
 class SignupIn(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=8, max_length=72)
+    password: str = Field(min_length=1, max_length=72)  # 길이·조합은 아래 규칙에서 한국어 안내와 함께 검사
     name: str = Field(min_length=1, max_length=50)
+
+    @field_validator("password")
+    @classmethod
+    def strong_password(cls, v: str) -> str:
+        if not PASSWORD_RULE.match(v):
+            raise ValueError(PASSWORD_MESSAGE)
+        return v
+
+
+class DemoLoginIn(BaseModel):
+    kind: Literal["user", "admin"] = "user"
+
+
+class RoleIn(BaseModel):
+    role: Literal["USER", "ADMIN"]
 
 
 class LoginIn(BaseModel):
@@ -115,3 +136,9 @@ class JobLogIn(BaseModel):
     message: str | None = Field(default=None, max_length=500)
     started_at: datetime
     ended_at: datetime | None = None
+
+
+class EnsureListingsIn(BaseModel):
+    name: str = Field(min_length=1, max_length=50)
+    base_url: str = Field(pattern=r"^https://", max_length=200)
+    url_template: str = Field(pattern=r"^https://.*\{query\}", max_length=300)

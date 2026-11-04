@@ -19,6 +19,7 @@ services:
         - frontend/**
         - render.yaml
         - .dockerignore
+        - requirements.txt
     envVars:
       - key: APP_ENV
         value: production

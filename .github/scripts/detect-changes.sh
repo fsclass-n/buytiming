@@ -36,13 +36,13 @@ has() { [ "$files" = "__all__" ] || grep -qE "$1" <<< "$files"; }
 bool() { if "$@"; then echo true; else echo false; fi; }
 
 fe=$(bool has '^frontend/')
-be=$(bool has '^backend/')
-rp=$(bool has '^rpa/')
+be=$(bool has '^(backend/|requirements\.txt$)')
+rp=$(bool has '^(rpa/|requirements\.txt$)')
 compose=$(bool has '^docker-compose\.yml$')
 dep=$(bool has '^deploy/')
 ntl=$(bool has '^(frontend/|netlify\.toml$)')
 # Render는 프런트엔드까지 함께 서빙하는 단독 풀스택 이미지(backend/Dockerfile.render, 컨텍스트 = 저장소 루트)
-rnd=$(bool has '^(backend/|frontend/|render\.yaml$|\.dockerignore$)')
+rnd=$(bool has '^(backend/|frontend/|render\.yaml$|\.dockerignore$|requirements\.txt$)')
 all=$([ "$files" = "__all__" ] || [ "$compose" = true ] && echo true || echo false)
 
 services=""
@@ -53,7 +53,9 @@ else
   ec2=$([ "$fe" = true ] || [ "$be" = true ] || [ "$rp" = true ] || [ "$compose" = true ] || [ "$dep" = true ] && echo true || echo false)
   [ "$be" = true ] && services="api"
   [ "$rp" = true ] && services="${services:+$services }rpa"
-  web=$dep
+  # React 화면은 web 이미지(nginx)에 빌드되어 들어가므로 frontend/·deploy/가 바뀌면 web을 다시 빌드한다
+  { [ "$fe" = true ] || [ "$dep" = true ]; } && services="${services:+$services }web"
+  web=false
 fi
 
 echo "결과: netlify=$ntl render=$rnd ec2=$ec2 (mode=$EC2_MODE, all=$all, services='$services', web=$web)"

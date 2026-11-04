@@ -1,17 +1,23 @@
+# RPA 수집기 이미지 (EC2 docker compose의 rpa 서비스). 빌드 컨텍스트 = 저장소 루트
+#   docker build -f rpa/Dockerfile -t buytiming-rpa .
 FROM python:3.11.9-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    TZ=Asia/Seoul
+    TZ=Asia/Seoul \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+# Playwright Chromium: JavaScript로 가격을 그리는 쇼핑몰(malls.json "render": "playwright")용
+RUN pip install -r requirements.txt \
+    && playwright install --with-deps chromium \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY collector ./collector
-COPY malls.json public_price_map.json ./
-RUN useradd --create-home rpa && mkdir -p /app/reports && chown -R rpa /app
+COPY rpa/collector ./collector
+COPY rpa/malls.json rpa/public_price_map.json ./
+RUN useradd --create-home rpa && mkdir -p /app/reports && chown -R rpa /app /ms-playwright
 USER rpa
 
 # 기본: 내장 스케줄러(매시 수집, 03:00 재학습, 06:00 참가격, 월 07:00 리포트)

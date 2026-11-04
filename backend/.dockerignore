@@ -1,9 +1,0 @@
-__pycache__/
-*.pyc
-.pytest_cache/
-.ruff_cache/
-tests/
-*.db
-smoke_reports/
-reports/
-.env

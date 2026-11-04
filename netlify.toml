@@ -2,8 +2,13 @@
 # 사이트 환경 변수 API_BASE_URL(예: https://buytiming-api.onrender.com)을 지정하면 실제 API와 연동된다.
 [build]
   base = "frontend"
-  publish = "."
-  command = "sh build.sh"
+  publish = "dist"
+  command = "npm ci && npm run build"
+  # frontend/가 바뀐 커밋만 빌드 (백엔드만 바뀌면 건너뜀)
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- ."
+
+[build.environment]
+  NODE_VERSION = "22"
 
 [[headers]]
   for = "/*"

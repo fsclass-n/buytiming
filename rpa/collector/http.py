@@ -35,22 +35,30 @@ class PoliteSession:
             self._robots[root] = rp
         return self._robots[root].can_fetch(self.ua, url)
 
-    def _wait(self) -> None:
+    def wait(self) -> None:
+        """요청 간격 유지 (API 호출에도 같은 간격을 적용)"""
         gap = self.interval - (time.monotonic() - self._last)
         if gap > 0:
             time.sleep(gap)
         self._last = time.monotonic()
 
-    def fetch(self, url: str) -> BeautifulSoup:
+    _wait = wait
+
+    def fetch(self, url: str, render: bool = False, wait_for: str | None = None) -> BeautifulSoup:
+        """render=True면 Playwright(Chromium)로 JavaScript 실행 후의 HTML을 가져온다"""
         if not self.allowed(url):
             raise CollectError(f"robots.txt가 허용하지 않는 경로: {url}")
         for attempt in range(self.retries):
-            self._wait()
+            self.wait()
             try:
+                if render:
+                    from .browser import render as render_page
+
+                    return render_page(url, self.ua, int(self.timeout * 2000), wait_for)
                 r = self.s.get(url, timeout=self.timeout)
                 r.raise_for_status()
                 return BeautifulSoup(r.text, "html.parser")
-            except requests.RequestException as exc:
+            except Exception as exc:  # requests 오류, Playwright 시간 초과 등
                 log.warning("요청 실패(%s/%s) %s: %s", attempt + 1, self.retries, url, exc)
                 time.sleep(3 * 2 ** attempt)
         raise CollectError(f"요청 실패: {url}")

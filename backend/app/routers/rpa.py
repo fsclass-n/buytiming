@@ -2,6 +2,7 @@
 import base64
 import logging
 from datetime import timedelta
+from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Response
@@ -14,7 +15,7 @@ from ..errors import ApiError
 from ..jobs.weekly_report import build_report
 from ..ml.train import train_and_register
 from ..models import Mall, ModelVersion, PriceHistory, Product, ProductListing, PublicPrice, RpaJobLog
-from ..schemas import JobLogIn, ModelUploadIn, PriceBulkIn, PublicPriceIn
+from ..schemas import EnsureListingsIn, JobLogIn, ModelUploadIn, PriceBulkIn, PublicPriceIn
 from ..security import rpa_key
 from ..services.alerts import refresh_product
 
@@ -137,3 +138,23 @@ def weekly_report(db: Session = Depends(get_db)):
     data, name = build_report(db)
     return Response(data, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+@router.post("/ensure-listings")
+def ensure_listings(body: EnsureListingsIn, db: Session = Depends(get_db)):
+    """API 기반 판매처(예: 네이버쇼핑 OpenAPI)를 모든 상품에 연결한다. 이미 있으면 건너뜀(여러 번 호출해도 안전)"""
+    mall = db.execute(select(Mall).where(Mall.name == body.name)).scalar_one_or_none()
+    if mall is None:
+        mall = Mall(name=body.name, base_url=body.base_url, robots_checked_at=now_local().date())
+        db.add(mall)
+        db.flush()
+    have = set(db.execute(select(ProductListing.product_id).where(ProductListing.mall_id == mall.id)).scalars())
+    created = 0
+    for p in db.execute(select(Product)).scalars():
+        if p.id in have:
+            continue
+        query = " ".join(x for x in (p.name, p.brand if p.brand != "-" else "") if x)
+        db.add(ProductListing(product_id=p.id, mall_id=mall.id, url=body.url_template.format(query=quote(query))))
+        created += 1
+    db.commit()
+    return {"mall_id": mall.id, "created": created}

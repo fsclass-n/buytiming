@@ -1,0 +1,43 @@
+# BuyTiming - single Python dependency list (backend, rpa, tests). Install: pip install -r requirements.txt
+# Used by every Docker image (backend/Dockerfile, backend/Dockerfile.render, rpa/Dockerfile).
+# Keep this file ASCII-only: pip on Korean Windows reads it with the cp949 locale encoding.
+
+# --- Web / API ---
+fastapi==0.115.12
+uvicorn[standard]==0.34.3
+pydantic==2.11.7
+pydantic-settings==2.9.1
+email-validator==2.2.0
+httpx==0.28.1                  # OAuth token exchange, test client
+
+# --- Database (TiDB / AWS RDS MySQL) ---
+SQLAlchemy==2.0.41
+PyMySQL==1.1.1
+cryptography==44.0.3
+
+# --- Auth ---
+PyJWT==2.10.1
+bcrypt==4.3.0
+
+# --- Generative AI (Google Gemini) ---
+google-genai==1.20.0
+
+# --- Data / ML / Report ---
+numpy==2.2.6
+pandas==2.2.3
+scikit-learn==1.6.1
+joblib==1.5.1
+matplotlib==3.10.3
+seaborn==0.13.2
+openpyxl==3.1.5
+
+# --- RPA / collection ---
+requests==2.32.4
+beautifulsoup4==4.13.4
+python-dotenv==1.1.0
+playwright==1.64.1             # JS-rendered pages (browser installed only in the rpa image)
+boto3==1.35.99                 # optional AWS S3 upload
+
+# --- Dev / test ---
+pytest==8.4.1
+ruff==0.12.0
