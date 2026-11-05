@@ -8,11 +8,10 @@
 
 | 용도 | 파일 |
 |---|---|
-| 편집·발표 | [프로젝트_발표자료.pptx](../프로젝트_발표자료.pptx) |
+| 발표·기술 면접 포트폴리오 PPT (18장) | [프로젝트_발표자료.pptx](../프로젝트_발표자료.pptx) |
 | 검토·화면 공유 | [프로젝트_발표자료.pdf](../pdf/프로젝트_발표자료.pdf) |
-| 기술 면접 포트폴리오 (18장) | [포트폴리오_PickTiming.pptx](../포트폴리오_PickTiming.pptx) · [PDF](../pdf/포트폴리오_PickTiming.pdf) · [미리보기](포트폴리오_미리보기.png) |
-| 최종 PPT 완성 프롬프트 | [프롬프트.md](프롬프트.md) |
-| 발표 연습 | [3분 발표 대본 PDF](3분_발표대본.pdf) · [Markdown](3분_발표대본.md) |
+| 10분 발표·시연 영상 제작 프롬프트 | [영상제작_프롬프트.md](영상제작_프롬프트.md) — `3조_final.mp4`, 자막, README 템플릿 |
+| 이전 10장 발표본 대본(참고) | [3분 발표 대본 PDF](3분_발표대본.pdf) · [Markdown](3분_발표대본.md) |
 | 웹 시연 | [7분 시연 시나리오 PDF](7분_시연시나리오.pdf) · [Markdown](7분_시연시나리오.md) |
 | 변경 내용 | [수정 보고서 PDF](수정사항_보고서.pdf) · [Markdown](수정사항_보고서.md) |
 | 검수 | [검수 결과](검수결과.md) · [슬라이드 미리보기](슬라이드_미리보기.png) |
@@ -43,7 +42,7 @@ Python 패키지는 `python-pptx`, `PyMuPDF`, `reportlab`, `fonttools`, `lxml`, 
 | 소스 | 역할 |
 |---|---|
 | `tools/story.json` | 슬라이드 제목·대본·시간·전환 멘트 |
-| `tools/build_portfolio.py` | 면접용 팀 포트폴리오 18장·발표자 노트(설명 포인트·예상 질문) |
+| `tools/build_portfolio.py` | 제출 PPT `프로젝트_발표자료.pptx`(18장)·발표자 노트(설명 포인트·예상 질문) |
 | `tools/build_presentation.py` | 원본 PPT 기반 10장 리디자인·발표자 노트·대본 생성 |
 | `tools/artifact_content.py` | 단계별 산출물·진행일지의 검증된 내용 |
 | `tools/build_hwpx.py` | 원본 HWPX 표·스타일을 이용한 개정본 생성 |

@@ -31,14 +31,8 @@
       "empty_pages": []
     },
     {
-      "file": "pdf/포트폴리오_PickTiming.pdf",
-      "pages": 18,
-      "out_of_page_text": [],
-      "empty_pages": []
-    },
-    {
       "file": "pdf/프로젝트_발표자료.pdf",
-      "pages": 10,
+      "pages": 18,
       "out_of_page_text": [],
       "empty_pages": []
     },
@@ -94,12 +88,7 @@
   "broken_links": [],
   "ppt_shape_overflow": [],
   "hwpx_missing_text": [],
-  "ppt_slides": 10,
-  "speaker_notes_match_script": true,
-  "timing_matches_script": true,
-  "script_budget_seconds": 170,
-  "pdf_pages_match_slides": true,
-  "portfolio_slides": 18,
-  "portfolio_notes_complete": true,
-  "portfolio_pdf_pages_match": true
+  "ppt_slides": 18,
+  "ppt_notes_complete": true,
+  "pdf_pages_match_slides": true
 }

@@ -1,5 +1,4 @@
 """발표 보조 PDF를 만들고 제출 문서의 내용·링크·영역을 검수한다."""
-import hashlib
 import json
 import re
 import tempfile
@@ -157,32 +156,16 @@ def verify():
     deck = Presentation(DOCS / "프로젝트_발표자료.pptx")
     for i, slide in enumerate(deck.slides, 1):
         for shape in slide.shapes:
-            if shape.left < 0 or shape.top < 0 or shape.left + shape.width > deck.slide_width + 100 or shape.top + shape.height > deck.slide_height + 100:
+            if shape.left < 0 or shape.top < 0 or shape.left + shape.width > deck.slide_width + 100 \
+                    or shape.top + shape.height > deck.slide_height + 100:
                 report["ppt_shape_overflow"].append({"slide": i, "shape": shape.name})
-        assert slide.notes_slide.notes_text_frame.text.strip()
     report["ppt_slides"] = len(deck.slides)
-    story_path = WORK / "tools/story.json"
-    story = json.loads(story_path.read_text(encoding="utf-8"))
-    timing = json.loads((WORK / "timing-check.json").read_text(encoding="utf-8"))
-    report["speaker_notes_match_script"] = all(
-        item["script"] in slide.notes_slide.notes_text_frame.text
-        and item["transition"] in slide.notes_slide.notes_text_frame.text
-        for item, slide in zip(story, deck.slides, strict=True)
-    )
-    report["timing_matches_script"] = timing["story_sha256"] == hashlib.sha256(story_path.read_bytes()).hexdigest()
-    report["script_budget_seconds"] = sum(item["seconds"] for item in story)
+    report["ppt_notes_complete"] = all("예상 질문" in sl.notes_slide.notes_text_frame.text for sl in deck.slides)
     report["pdf_pages_match_slides"] = len(fitz.open(DOCS / "pdf/프로젝트_발표자료.pdf")) == len(deck.slides)
-    portfolio = Presentation(DOCS / "포트폴리오_PickTiming.pptx")
-    for i, slide in enumerate(portfolio.slides, 1):
-        for shape in slide.shapes:
-            if shape.left < 0 or shape.top < 0 or shape.left + shape.width > portfolio.slide_width + 100 \
-                    or shape.top + shape.height > portfolio.slide_height + 100:
-                report["ppt_shape_overflow"].append({"deck": "portfolio", "slide": i, "shape": shape.name})
-    report["portfolio_slides"] = len(portfolio.slides)
-    report["portfolio_notes_complete"] = all("예상 질문" in sl.notes_slide.notes_text_frame.text for sl in portfolio.slides)
-    report["portfolio_pdf_pages_match"] = len(fitz.open(DOCS / "pdf/포트폴리오_PickTiming.pdf")) == len(portfolio.slides)
     for path in DOCS.rglob("*.md"):
-        for link in re.findall(r"\[[^\]]+\]\(([^)]+)\)", path.read_text(encoding="utf-8")):
+        # 코드 블록 안의 예시(README 템플릿 등)는 다른 위치 기준 경로이므로 검사하지 않는다.
+        body = re.sub(r"(?ms)^(`{3,}).*?^\1", "", path.read_text(encoding="utf-8"))
+        for link in re.findall(r"\[[^\]]+\]\(([^)]+)\)", body):
             if re.match(r"^[a-z]+:|^#", link):
                 continue
             target = path.parent / unquote(link.split("#")[0])
@@ -210,17 +193,14 @@ def main():
     for name in ["3분_발표대본", "7분_시연시나리오", "수정사항_보고서"]:
         pdf_from_markdown(WORK / f"{name}.md")
     render_contact()
-    render_contact("포트폴리오_PickTiming", "포트폴리오_미리보기.png")
     report = verify()
     print(json.dumps({k: v for k, v in report.items() if k != "pdfs"}, ensure_ascii=False, indent=2))
     print("PDFs:", len(report["pdfs"]), "pages:", sum(p["pages"] for p in report["pdfs"]))
     assert not report["broken_links"], "문서 링크를 확인하세요."
     assert not report["ppt_shape_overflow"], "슬라이드 도형 영역을 확인하세요."
     assert not report["hwpx_missing_text"], "HWPX와 PDF의 내용 일치를 확인하세요."
-    assert report["speaker_notes_match_script"] and report["timing_matches_script"], "대본·노트·시간 기록을 동기화하세요."
-    assert report["script_budget_seconds"] + 10 <= 180, "3분 시간 예산을 확인하세요."
+    assert report["ppt_notes_complete"], "발표자 노트(설명 포인트·예상 질문)를 확인하세요."
     assert report["pdf_pages_match_slides"], "PPT와 PDF의 장 수를 확인하세요."
-    assert report["portfolio_notes_complete"] and report["portfolio_pdf_pages_match"], "포트폴리오 노트·PDF를 확인하세요."
     assert all(not p["out_of_page_text"] and not p["empty_pages"] for p in report["pdfs"]), "PDF 페이지를 확인하세요."
 
 

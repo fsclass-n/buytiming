@@ -530,7 +530,7 @@ def main():
     props.subject = "기술 면접용 포트폴리오"
     props.author = "3조 · 박미금 · 김모란 · 이오리 · 홍기흥"
     props.keywords = "PickTiming, FastAPI, React, RPA, scikit-learn, Gemini, Portfolio"
-    deck.save(OUT / "포트폴리오_PickTiming.pptx")
+    deck.save(OUT / "프로젝트_발표자료.pptx")  # 최종 발표·포트폴리오 PPT(18장)
     print("portfolio:", len(deck.slides), "slides")
 
 

@@ -497,7 +497,8 @@ def main():
     props.author = "3조 · 박미금 · 김모란 · 이오리 · 홍기흥"
     props.keywords = "PickTiming, 가격 비교, 구매 타이밍, Navy Tech"
     props.comments = "원본 13장을 10장으로 리디자인. 확인되지 않은 성과 수치는 제외."
-    deck.save(OUT / "프로젝트_발표자료.pptx")
+    # 이전 10장 발표본은 참고용으로 임시 폴더에만 만든다. 제출 PPT는 build_portfolio.py가 만든다.
+    deck.save(CACHE / "발표본_10장.pptx")
     write_script()
     print("PPT:", len(deck.slides), "slides; script:", sum(s["seconds"] for s in STORY), "seconds")
 
