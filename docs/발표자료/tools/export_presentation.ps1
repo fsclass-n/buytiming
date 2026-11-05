@@ -1,8 +1,8 @@
 param([string]$DocsRoot = (Join-Path $PSScriptRoot '..\..'))
 $ErrorActionPreference = 'Stop'
 $docs = (Resolve-Path $DocsRoot).Path
-$source = Join-Path $docs '3조_최종발표_PPT.pptx'
-$pdf = Join-Path $docs '3조_최종발표_PPT.pdf'
+$source = Join-Path $docs '프로젝트_발표자료.pptx'
+$pdf = Join-Path $docs 'pdf\프로젝트_발표자료.pdf'
 $ppt = New-Object -ComObject PowerPoint.Application
 $deck = $null
 try {
@@ -13,12 +13,15 @@ try {
     foreach ($slide in $deck.Slides) {
         foreach ($shape in $slide.Shapes) {
             if ($shape.HasTextFrame -and $shape.TextFrame.HasText) {
-                if ($shape.TextFrame2.TextRange.BoundHeight -gt ($shape.Height + 2)) {
+                $range = $shape.TextFrame2.TextRange
+                if ($range.BoundHeight -gt ($shape.Height + 2) -or $range.BoundWidth -gt ($shape.Width + 2)) {
                     $issues += [PSCustomObject]@{
                         Slide = $slide.SlideIndex
                         Text = $shape.TextFrame.TextRange.Text
-                        Actual = $shape.TextFrame2.TextRange.BoundHeight
-                        Available = $shape.Height
+                        ActualHeight = $range.BoundHeight
+                        AvailableHeight = $shape.Height
+                        ActualWidth = $range.BoundWidth
+                        AvailableWidth = $shape.Width
                     }
                 }
             }
@@ -31,7 +34,6 @@ try {
     }
     $report | ConvertTo-Json -Depth 5 | Set-Content -Encoding UTF8 (Join-Path $docs '발표자료\powerpoint-check.json')
     if ($issues.Count -gt 0) { throw "Text height overflow: $($issues.Count)" }
-    Copy-Item $pdf (Join-Path $docs 'pdf\프로젝트_발표자료.pdf') -Force
     Write-Output "Exported $($deck.Slides.Count) slides; text height overflow: 0"
 }
 finally {

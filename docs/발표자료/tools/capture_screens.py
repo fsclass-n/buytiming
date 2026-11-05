@@ -17,21 +17,29 @@ def main():
         browser = pw.chromium.launch(channel="msedge", headless=True)
         page = browser.new_page(viewport={"width": 1440, "height": 1000}, device_scale_factor=1.5)
 
-        def capture(name, locator=None, clip=None):
+        def ready(heading):
+            expect(page.get_by_role("heading", name=heading).first).to_be_visible()
+            page.wait_for_load_state("networkidle")
             page.evaluate("document.fonts.ready")
-            page.screenshot(path=str(ASSETS / name), clip=clip) if clip else (
-                locator or page.get_by_role("main")
-            ).screenshot(path=str(ASSETS / name))
+
+        def capture(name, locator=None):
+            # 앱 밖에서 Netlify가 덧붙인 배지만 숨긴다. 앱 UI는 바꾸지 않는다.
+            page.evaluate("""() => { for (const el of document.body.children) {
+                if (el.id !== 'root' && !['SCRIPT', 'DIALOG'].includes(el.tagName)) el.style.display = 'none'; } }""")
+            (locator or page.get_by_role("main")).screenshot(path=str(ASSETS / name))
             records.append({"file": name, "url": page.url, "mode": "Netlify 브라우저 데모"})
 
         page.goto(BASE)
-        expect(page.get_by_role("heading", name="가격을 비교하고,\n살 때를 발견하세요.")).to_be_visible()
-        page.wait_for_load_state("networkidle")
+        ready("가격을 비교하고,\n살 때를 발견하세요.")
         capture("home.png", page.locator(".hero-surface"))
+
+        page.goto(BASE + "/search")
+        ready("상품 탐색")
+        capture("search.png")
+
         page.set_viewport_size({"width": 1440, "height": 1600})
         page.goto(BASE + "/product/1")
-        expect(page.get_by_role("heading", name="구매 타이밍 신호등")).to_be_visible()
-        page.wait_for_load_state("networkidle")
+        ready("구매 타이밍 신호등")
         chart = page.get_by_role("heading", name="가격의 흐름").locator("../..")
         grid = page.locator("main .grid.items-start")
         capture("product-chart.png", grid)
@@ -40,31 +48,56 @@ def main():
         scale = shot.width / grid.bounding_box()["width"]
         height = max(chart.bounding_box()["height"], grid.locator("aside").bounding_box()["height"])
         shot.crop((0, 0, shot.width, math.ceil(height * scale))).save(ASSETS / "product-chart.png")
+
         page.get_by_role("button", name="목표가 알림", exact=True).click()
         expect(page.get_by_role("dialog")).to_be_visible()
         capture("target-alert.png", page.get_by_role("dialog"))
         page.keyboard.press("Escape")
+
+        page.get_by_role("button", name="AI 구매 조언", exact=True).click()
+        page.get_by_role("button", name="구매 조언 받기").click()
+        expect(page.get_by_text("규칙 기반 분석", exact=True)).to_be_visible()
+        capture("ai-advice.png", page.get_by_role("heading", name="내 구매를 위한 한 줄 조언").locator(".."))
         page.set_viewport_size({"width": 1440, "height": 1000})
+
+        page.goto(BASE + "/chat/1")
+        ready("구매 타이밍 상담")
+        page.get_by_role("button", name="어느 쇼핑몰이 제일 싸?").click()
+        expect(page.get_by_role("log")).to_contain_text("실구매가")
+        capture("chat.png")
+
         page.goto(BASE + "/watchlist")
-        expect(page.get_by_role("heading", name="내 관심 상품")).to_be_visible()
-        page.wait_for_load_state("networkidle")
+        ready("내 관심 상품")
         capture("watchlist.png")
+
+        page.goto(BASE + "/alerts")
+        ready("가격 알림")
+        capture("alerts.png")
+
         page.goto(BASE + "/signup")
         page.get_by_label("서비스 이용 안내에 동의합니다 (필수)").check()
         page.get_by_label("개인정보 처리 안내에 동의합니다 (필수)").check()
         page.get_by_role("button", name="동의하고 계속").click()
         capture("signup.png")
+
         page.goto(BASE + "/login")
         page.get_by_role("button", name="관리자 테스트").click()
         expect(page.get_by_role("link", name="관리자 센터")).to_be_visible()
+        page.goto(BASE + "/admin")
+        ready("관리자 · 수집·모델")
+        capture("admin-dashboard.png")
+        page.goto(BASE + "/admin/ai")
+        ready("관리자 · AI 사용량")
+        capture("admin-ai.png")
         page.goto(BASE + "/admin/users")
+        ready("관리자 · 회원 관리")
         expect(page.get_by_role("table")).to_be_visible()
         capture("admin-users.png")
         browser.close()
     (ASSETS / "capture-manifest.json").write_text(json.dumps({
         "captured_at": datetime.now(UTC).isoformat(),
         "default_viewport": [1440, 1000], "product_viewport": [1440, 1600], "records": records,
-        "notice": "실제 서비스 UI를 캡처했으며 상품·가격·계정은 명시된 데모 데이터이다.",
+        "notice": "실제 서비스 UI를 캡처했으며 상품·가격·계정·AI 답변은 명시된 데모 데이터이다.",
     }, ensure_ascii=False, indent=2), encoding="utf-8")
 
 

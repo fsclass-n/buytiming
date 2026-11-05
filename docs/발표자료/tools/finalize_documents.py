@@ -128,8 +128,8 @@ def normalized(value):
 
 
 def render_contact():
-    source = fitz.open(DOCS / "3조_최종발표_PPT.pdf")
-    canvas = Image.new("RGB", (1440, 1680), "#07101e")
+    source = fitz.open(DOCS / "pdf/프로젝트_발표자료.pdf")
+    canvas = Image.new("RGB", (1440, 420 * ((len(source) + 1) // 2)), "#07101e")
     for i, page in enumerate(source):
         pix = page.get_pixmap(matrix=fitz.Matrix(.72, .72))
         image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
@@ -154,7 +154,7 @@ def verify():
         report["pdfs"].append({"file": path.relative_to(DOCS).as_posix(), "pages": len(doc),
                                "out_of_page_text": sorted(set(outside)),
                                "empty_pages": [i + 1 for i, p in enumerate(doc) if len(p.get_text().strip()) < 10]})
-    deck = Presentation(DOCS / "3조_최종발표_PPT.pptx")
+    deck = Presentation(DOCS / "프로젝트_발표자료.pptx")
     for i, slide in enumerate(deck.slides, 1):
         for shape in slide.shapes:
             if shape.left < 0 or shape.top < 0 or shape.left + shape.width > deck.slide_width + 100 or shape.top + shape.height > deck.slide_height + 100:
@@ -171,8 +171,7 @@ def verify():
     )
     report["timing_matches_script"] = timing["story_sha256"] == hashlib.sha256(story_path.read_bytes()).hexdigest()
     report["script_budget_seconds"] = sum(item["seconds"] for item in story)
-    report["ppt_copies_identical"] = (DOCS / "3조_최종발표_PPT.pptx").read_bytes() == (DOCS / "프로젝트_발표자료.pptx").read_bytes()
-    report["pdf_copies_identical"] = (DOCS / "3조_최종발표_PPT.pdf").read_bytes() == (DOCS / "pdf/프로젝트_발표자료.pdf").read_bytes()
+    report["pdf_pages_match_slides"] = len(fitz.open(DOCS / "pdf/프로젝트_발표자료.pdf")) == len(deck.slides)
     for path in DOCS.rglob("*.md"):
         for link in re.findall(r"\[[^\]]+\]\(([^)]+)\)", path.read_text(encoding="utf-8")):
             if re.match(r"^[a-z]+:|^#", link):
@@ -210,7 +209,7 @@ def main():
     assert not report["hwpx_missing_text"], "HWPX와 PDF의 내용 일치를 확인하세요."
     assert report["speaker_notes_match_script"] and report["timing_matches_script"], "대본·노트·시간 기록을 동기화하세요."
     assert report["script_budget_seconds"] + 10 <= 180, "3분 시간 예산을 확인하세요."
-    assert report["ppt_copies_identical"] and report["pdf_copies_identical"], "제출본과 기존명 파일을 동기화하세요."
+    assert report["pdf_pages_match_slides"], "PPT와 PDF의 장 수를 확인하세요."
     assert all(not p["out_of_page_text"] and not p["empty_pages"] for p in report["pdfs"]), "PDF 페이지를 확인하세요."
 
 
