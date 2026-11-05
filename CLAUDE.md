@@ -16,9 +16,10 @@ Render 배포는 Auto-Deploy "After CI Checks Pass", EC2 배포는 `deploy.yml`.
 
 | 경로 | 내용 | 배포 대상 (main push 시) |
 |---|---|---|
-| `frontend/` | HTML + Vanilla JS(ES Modules) + Bootstrap 5, 번들러 없음 | Netlify, Render(풀스택 이미지), EC2(nginx, git pull) |
+| `frontend/` | React 19 · Vite 8 · Tailwind CSS v4, `src/App.jsx` 중심 고객 UI | Netlify, Render(풀스택 이미지), EC2(nginx 이미지) |
 | `netlify.toml` | Netlify 설정 (base=frontend) | Netlify |
-| `backend/` | Python 3.11 · FastAPI · SQLAlchemy. `Dockerfile`(EC2·CI용 API), `Dockerfile`(Render용 API+프런트) | Render, EC2(api) |
+| `backend/` | Python 3.11 · FastAPI · SQLAlchemy, `backend/Dockerfile`(EC2·CI용 API) | Render, EC2(api) |
+| `Dockerfile`(루트) | React를 빌드하고 API와 함께 제공하는 Render 풀스택 이미지 | Render |
 | `render.yaml`, `.dockerignore`(루트) | Render Blueprint, Render 빌드 컨텍스트(저장소 루트) 필터 | Render |
 | `rpa/` | 가격 수집기(Requests · BeautifulSoup), Docker | EC2(rpa) |
 | `docker-compose.yml` | EC2 전체 스택(web + api + rpa, DB는 TiDB) | EC2 전체 재빌드 |
@@ -30,12 +31,19 @@ Render 배포는 Auto-Deploy "After CI Checks Pass", EC2 배포는 `deploy.yml`.
 
 ```bash
 # 설치 (저장소 루트, .venv 활성화 후)
-pip install -r backend/requirements-dev.txt -r rpa/requirements-dev.txt
+pip install -r requirements.txt
 
 # 테스트·린트 — 작업 완료 전에 바뀐 영역은 반드시 실행
 ruff check backend rpa
 cd backend && pytest -q        # 임시 SQLite (.env의 TiDB를 쓰지 않음)
 cd rpa && pytest -q
+cd frontend && npm ci && npm run build
+
+# 화면만 개발 (백엔드·DB 없이 데모; PowerShell: $env:VITE_DEMO="1"; npm run dev)
+cd frontend && VITE_DEMO=1 npm run dev
+# 실제 API 연동: 다른 터미널에서 FastAPI 실행 후 frontend에서 npm run dev
+# 브라우저 회귀 검사: npm run build && npm run preview 실행 후 저장소 루트에서
+python frontend/tests/ui_smoke.py
 
 # 로컬 실행 — .env가 운영 TiDB를 가리킨다(로컬에서 바꾼 데이터 = 운영 데이터)
 cd backend && uvicorn app.main:app --reload                         # http://localhost:8000 (화면 + API)
@@ -54,11 +62,12 @@ CHANGED_FILES="backend/app/main.py" EVENT=push bash .github/scripts/detect-chang
 4. **비밀값**: `.env`·API 키·DB 접속 문자열을 커밋하거나 출력하지 않는다. 새 환경 변수가 필요하면 `.env.example`과 `render.yaml`(`sync: false`)에 키만 추가하고,
    세 환경(로컬·EC2·Render)에서 같은 값으로 동작하게 만든다(환경별로 달라야 하는 값은 코드 기본값으로 처리).
    Gemini 키는 서버(backend)에만 둔다. 브라우저 코드에서 Gemini를 직접 호출하지 않는다.
-5. **`frontend/js/config.js`**: Netlify 빌드 때 `build.sh`가 다시 생성한다. 커밋되는 버전은 `API_BASE_URL: ""`(데모 모드)를 유지한다.
-   로컬에서 `build.sh`를 실행해 바뀐 config.js는 커밋하지 않는다. Render(FastAPI)와 EC2(nginx)는 `/js/config.js`를 같은 도메인 설정(`"/"`)으로 바꿔 응답한다.
+5. **`frontend/public/js/config.js`**: Vite가 빌드 결과에 복사한다. 커밋되는 버전은 `API_BASE_URL: ""`(데모 모드)를 유지한다.
+   Render(FastAPI)와 EC2(nginx)는 `/js/config.js`를 같은 도메인 설정(`"/"`)으로 바꿔 응답한다.
    Netlify에 `API_BASE_URL`을 등록하지 않는다(데모 모드 유지 결정).
-6. **프런트엔드 빌드 체계 유지**: npm·번들러·React 등을 도입하지 않는다(Netlify는 `sh build.sh`만 실행, CI는 `node --check`로 문법만 검사).
-   새 JS 파일은 `frontend/js/` 또는 `frontend/js/pages/`에 ES Module로 둔다.
+6. **프런트엔드 빌드 체계 유지**: 사용자가 요청한 React(Vite) + Tailwind CSS v4를 사용한다. `npm ci && npm run build`로 검증한다.
+   고객 UI와 상호작용은 `frontend/src/App.jsx`, 디자인 토큰은 `src/index.css`에 있다. 관리자 페이지는 필요 시 지연 로드한다.
+   가격·추천 점수는 API 응답으로 표시하고, 전체 이력이 확인된 경우에만 역대 최저가로 표시한다.
 7. **DB 호환성**: 로컬·Render·EC2 모두 TiDB(MySQL 호환), CI는 SQLite와 MySQL 8 둘 다 테스트한다.
    한쪽 DB에서만 동작하는 SQL·타입(PostgreSQL 전용 문법 등)을 쓰지 않는다.
 8. **데이터 삭제 금지**: 로컬도 운영 TiDB를 쓴다. `python -m app.seed --reset`, `TEST_DATABASE_URL=<TiDB>` 테스트는 운영 데이터를 지우므로 실행하지 않는다.
@@ -69,7 +78,7 @@ CHANGED_FILES="backend/app/main.py" EVENT=push bash .github/scripts/detect-chang
 ## 5. 코드 규칙
 
 - Python: `ruff.toml` 기준(line-length 170, py311, isort first-party = `app`, `collector`). 린트 설정을 완화하지 말고 코드를 고친다.
-- API는 `/api/v1` 아래에 두고 기존 라우터(`backend/app/routers/`) 구조를 따른다. 응답 형식을 바꾸면 `frontend/js/mock.js`도 같은 형식으로 맞춘다(데모 모드가 깨지지 않게).
+- API는 `/api/v1` 아래에 두고 기존 라우터(`backend/app/routers/`) 구조를 따른다. 응답 형식을 바꾸면 `frontend/src/lib/mock.js`도 같은 형식으로 맞춘다(데모 모드가 깨지지 않게).
 - 새 기능·버그 수정에는 pytest 테스트를 추가한다. ECC 규칙의 "커버리지 80%"는 목표치이며, **기존 테스트 전부 통과**가 필수 조건이다.
 - 커밋 메시지는 기존 이력처럼 짧은 영어 명령문을 쓴다(예: `Deploy only the targets whose folders changed`).
 - 문서·주석은 한국어로 쓴다.
@@ -90,7 +99,7 @@ CHANGED_FILES="backend/app/main.py" EVENT=push bash .github/scripts/detect-chang
 
 - 출처: ECC v2.2.3 (`affaan-m/ECC`, MIT, `--target claude-project --profile developer --enable-hooks`), `anthropics/skills`의 Apache-2.0 스킬.
 - docx·pdf·pptx·xlsx 스킬은 라이선스상 재배포가 금지되어 파일을 복사하지 않고 `settings.json`의 `enabledPlugins`로 등록했다. 처음 실행하면 Claude Code가 설치 여부를 묻는다.
-- 이 프로젝트와 관계없는 스킬(React, Next.js, Django, Spring 등)은 사용하지 않는다. 프런트엔드는 Vanilla JS, 백엔드는 FastAPI다.
+- 이 프로젝트와 관계없는 프레임워크의 스킬은 사용하지 않는다. 프런트엔드는 React·Vite, 백엔드는 FastAPI다.
 
 ### Hooks 조절
 
@@ -103,8 +112,9 @@ CHANGED_FILES="backend/app/main.py" EVENT=push bash .github/scripts/detect-chang
 
 - [ ] 바뀐 영역의 `ruff` · `pytest` 통과
 - [ ] 2번 표 기준으로 이번 변경이 어떤 배포를 일으키는지 사용자에게 보고
-- [ ] `.env`·비밀값·로컬에서 생성된 `frontend/js/config.js`가 커밋에 섞이지 않았는지 확인
-- [ ] API 응답 형식을 바꿨다면 `frontend/js/mock.js`도 수정
+- [ ] 프런트엔드 변경 시 빌드 및 `frontend/tests/ui_smoke.py` 통과
+- [ ] `.env`·비밀값·빌드 결과(`frontend/dist/`)가 커밋에 섞이지 않았는지 확인
+- [ ] API 응답 형식을 바꿨다면 `frontend/src/lib/mock.js`도 수정
 
 ## 8. 실수 기록 (같은 실수를 반복하지 않도록 계속 추가)
 

@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // 데모 모드: 보호 화면을 바로 볼 수 있게 데모 사용자로 자동 로그인
-    if (DEMO && !auth.user()) demoLogin('user').finally(() => setReady(true));
+    if (DEMO && !auth.user()) demoLogin('user').catch(() => setUser(null)).finally(() => setReady(true));
     const onLogout = () => setUser(null);
     window.addEventListener('pt:logout', onLogout);
     return () => window.removeEventListener('pt:logout', onLogout);

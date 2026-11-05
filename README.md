@@ -1,13 +1,13 @@
 # 픽타이밍(PickTiming) — 생성형 AI & RPA 기반 실시간 가격 비교·구매 적기 추천
 
-Final-Project 3조 (김길동(조장), 박미금, 이오리, 홍기흥)
+Final-Project 3조 (박미금(팀장), 김모란, 이오리, 홍기흥)
 
 RPA가 쇼핑몰 가격과 공공 가격 데이터를 1시간마다 모아 실시간으로 비교하고, scikit-learn 모델이
 "과거 패턴상 지금이 싼 시점인가?"를 판단하면 Google Gemini가 그 근거를 자연어로 설명합니다.
 
 | 구분 | 기술 |
 |---|---|
-| Frontend | HTML5, CSS3, Vanilla JavaScript(ES Modules), Bootstrap 5, Flexbox, Plotly.js — **Netlify(데모 모드)**, Render·EC2(실서비스) |
+| Frontend | React 19, Vite 8, Tailwind CSS v4, FontAwesome, Spoqa Han Sans Neo + Noto Sans KR, SVG 가격 차트 — **Netlify(데모 모드)**, Render·EC2(실서비스) |
 | Backend | Python 3.11 · FastAPI · SQLAlchemy — **Render / AWS EC2 (Docker)** |
 | Database | TiDB Cloud(로컬·Render·EC2 공용) / SQLite(자동 테스트) / MySQL 8.x(CI 호환성 테스트) |
 | AI | Google Gemini(gemini-2.5-flash, JSON 구조화 출력 + 숫자 대조 검증), scikit-learn RandomForest |
@@ -19,33 +19,36 @@ RPA가 쇼핑몰 가격과 공공 가격 데이터를 1시간마다 모아 실�
 
 | 단계 | 구현 결과물 |
 |---|---|
-| 설계 | `backend/app/models.py`(테이블 12개), `frontend/*.html`(화면 10개), `backend/app/routers`(API 22개 + RPA 보조 3개) |
+| 설계 | `backend/app/models.py`(테이블 12개), `frontend/src/App.jsx`(고객 UI), `backend/app/routers`(API) |
 | 구현 | 프런트엔드·백엔드·Gemini 연동·RPA 수집기, 판정 모델(`app/ml`), 주간 리포트(`app/jobs`) |
-| 배포 | Dockerfile·docker-compose·nginx·render.yaml·netlify.toml, GitHub Actions CI/CD, 테스트 36건 |
+| 배포 | Dockerfile·docker-compose·nginx·render.yaml·netlify.toml, GitHub Actions CI/CD, pytest + Playwright 검사 |
 
 ## 폴더 구조
 
 ```
 picktiming/
-├── frontend/              # 정적 사이트 (Netlify=데모 모드, Render·EC2=같은 도메인 API 연동)
-│   ├── *.html             # 홈·로그인·회원가입·검색·상세·AI 상담·관심 상품·알림·관리자 2종
-│   ├── js/api.js          # REST 클라이언트 (API_BASE_URL 없으면 mock.js로 데모 모드)
-│   ├── js/mock.js         # 백엔드와 같은 응답 형식의 브라우저 목업 API
-│   └── build.sh           # Netlify 빌드: API_BASE_URL → js/config.js
+├── frontend/              # React/Vite (Netlify=데모, Render·EC2=같은 도메인 API)
+│   ├── src/App.jsx        # 홈·검색·차트·알림·로그인·3단계 가입을 통합한 고객 UI
+│   ├── src/index.css      # Tailwind v4 디자인 토큰·반응형·포커스·모션
+│   ├── src/lib/           # api.js, auth.jsx, mock.js
+│   ├── src/pages/Admin*   # 지연 로드하는 관리자 통계·회원 관리
+│   ├── public/            # 데모 config.js, 로고, SPA 리다이렉트
+│   ├── tests/ui_smoke.py  # 로컬 Playwright 회귀 검사
+│   └── dist/              # npm run build 출력(Git 제외)
 ├── backend/               # FastAPI (Render · EC2)
 │   ├── app/routers/       # auth, products, ai, user_data, rpa, admin
 │   ├── app/ai/gemini.py   # 프롬프트·구조화 출력·숫자 검증·재요청·템플릿 대체
 │   ├── app/ml/            # 피처 8종, 학습(TimeSeriesSplit), 모델 저장(DB)
 │   ├── app/seed.py        # 시연 데이터(쇼핑몰 3곳·상품 12종·120일)
-│   ├── tests/             # pytest 29건
-│   ├── Dockerfile         # EC2·CI용 API 이미지
-│   ├── Dockerfile  # Render용 풀스택 이미지(API + frontend, 컨텍스트 = 저장소 루트)
-│   ├── requirements.txt · requirements-dev.txt
+│   ├── tests/             # pytest
+│   └── Dockerfile         # EC2·CI용 API 이미지
 ├── rpa/                   # 수집기 (EC2 컨테이너 스케줄러 / Render용은 GitHub Actions 예약 실행)
 │   ├── collector/         # http(robots.txt·간격·재시도), parsers, jobs, scheduler
 │   ├── malls.json         # 쇼핑몰별 CSS 셀렉터 (약관상 허용된 곳만)
-│   ├── tests/             # pytest 7건
-│   └── Dockerfile · requirements.txt
+│   ├── tests/             # pytest
+│   └── Dockerfile
+├── Dockerfile             # Render 풀스택: React 빌드 + FastAPI
+├── requirements.txt       # Python 통합 의존성
 ├── deploy/                # nginx.conf, EC2 설정 스크립트
 ├── docker-compose.yml     # EC2: web(nginx) + api + rpa [+ mysql]
 ├── render.yaml            # Render Blueprint (단독 풀스택)
@@ -65,7 +68,7 @@ picktiming/
 ```bash
 python -m venv .venv
 .venv\Scripts\activate            # macOS/Linux: source .venv/bin/activate
-pip install -r backend/requirements-dev.txt -r rpa/requirements-dev.txt
+pip install -r requirements.txt
 cp .env.example .env              # DATABASE_URL(TiDB), JWT_SECRET, RPA_API_KEY를 채운다 — 이 .env를 EC2·Render에도 그대로 사용
 
 cd backend
@@ -73,7 +76,19 @@ python -m app.seed                # (최초 1회) 시연 데이터 + 초기 모�
 uvicorn app.main:app --reload     # http://localhost:8000 (화면 + API, /docs)
 ```
 
-로컬도 운영과 같은 TiDB를 사용하므로 `python -m app.seed --reset`은 실행하지 않습니다. 화면 수정만 볼 때는 `cd frontend && python -m http.server 5501`(데모 모드)도 가능합니다.
+로컬도 운영과 같은 TiDB를 사용하므로 `python -m app.seed --reset`은 실행하지 않습니다. 화면만 확인할 때는 아래 데모 미리보기를 사용합니다.
+
+```powershell
+cd frontend
+npm ci
+npm run build
+npm run preview -- --host 127.0.0.1 --port 4173
+# http://127.0.0.1:4173 — 백엔드·DB를 사용하지 않는 데모
+```
+
+소스 변경을 즉시 반영하려면 `frontend/`에서 `$env:VITE_DEMO="1"; npm run dev`를 실행합니다.
+실제 API와 연결할 때는 `VITE_DEMO`를 해제하고 FastAPI와 Vite를 각각 실행합니다.
+세부 구조와 UI 검사는 [`docs/md/03-frontend.md`](docs/md/03-frontend.md)를 참고하세요.
 
 RPA 작업(다른 터미널):
 
@@ -88,8 +103,8 @@ python -m collector.scheduler     # 스케줄 상주 실행
 테스트·린트:
 
 ```bash
-cd backend && pytest -q           # 33 passed (임시 SQLite 사용 — .env의 TiDB는 건드리지 않음)
-cd rpa && pytest -q               # 7 passed
+cd backend && pytest -q           # 임시 SQLite 사용 — .env의 TiDB는 건드리지 않음
+cd rpa && pytest -q
 ruff check backend rpa
 ```
 
@@ -124,7 +139,7 @@ cd ~/picktiming && docker compose up -d --build                            # htt
 
 | 워크플로 | 시점 | 내용 |
 |---|---|---|
-| `ci.yml` | `main` 외 브랜치 push, PR | ruff, pytest(SQLite), pytest(MySQL 8 서비스 컨테이너), RPA 테스트, JS 문법·build.sh 검사, Docker 빌드·헬스 체크, compose 검증 |
+| `ci.yml` | `main` 외 브랜치 push, PR | ruff, pytest(SQLite), pytest(MySQL 8 서비스 컨테이너), RPA 테스트, React 빌드, Docker 빌드·헬스 체크, compose 검증 |
 | `deploy.yml` | `main` push, 수동 | CI 재사용(중복 실행 없음) → **바뀐 폴더에 해당하는 대상만** Render · EC2 · Netlify 배포 |
 | `collect-render.yml` | 매시 07분, 수동 | Render용 가격 수집(KST 03시 재학습, 06시 참가격, 월 07시 리포트 포함) |
 
@@ -132,7 +147,7 @@ cd ~/picktiming && docker compose up -d --build                            # htt
 
 | 바뀐 경로 | Netlify | Render | EC2 (full) | EC2 (rpa-only) |
 |---|:---:|:---:|:---:|:---:|
-| `frontend/` | ✅ | ✅ | ✅ (git pull로 반영) | – |
+| `frontend/` | ✅ | ✅ | ✅ (web 이미지 빌드) | – |
 | `netlify.toml` | ✅ | – | – | – |
 | `backend/` | – | ✅ | ✅ (api만 재빌드) | – |
 | `render.yaml`, `.dockerignore` | – | ✅ | – | – |

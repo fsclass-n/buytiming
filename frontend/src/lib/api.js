@@ -17,7 +17,16 @@ export class ApiError extends Error {
 
 export const auth = {
   token: () => localStorage.getItem(TOKEN_KEY),
-  user: () => JSON.parse(localStorage.getItem(USER_KEY) || 'null'),
+  user: () => {
+    try {
+      const value = JSON.parse(localStorage.getItem(USER_KEY) || 'null');
+      return value && typeof value === 'object' && value.id != null && ['USER', 'ADMIN'].includes(value.role) ? value : null;
+    } catch {
+      localStorage.removeItem(USER_KEY);
+      localStorage.removeItem(TOKEN_KEY);
+      return null;
+    }
+  },
   save(token, user) {
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -50,7 +59,10 @@ async function request(method, path, body) {
     auth.clear();
     window.dispatchEvent(new Event('pt:logout'));
   }
-  if (!resp.ok) throw new ApiError(resp.status, data?.code, data?.message || data?.detail || `요청 실패 (${resp.status})`);
+  if (!resp.ok) {
+    const detail = typeof data?.detail === 'string' ? data.detail : null;
+    throw new ApiError(resp.status, data?.code, data?.message || detail || (resp.status === 422 ? '입력 형식을 확인해 주세요.' : `요청 실패 (${resp.status})`));
+  }
   return data;
 }
 

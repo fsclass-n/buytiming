@@ -1,48 +1,85 @@
 @import "tailwindcss";
 
-/* 서체 2종: 제목(display) Black Han Sans · 본문(sans) Pretendard */
+/* 보라=주요 행동, 초록=하락·구매, 빨강=상승·대기. */
 @theme {
-  --font-sans: "Pretendard Variable", Pretendard, "Malgun Gothic", system-ui, sans-serif;
-  --font-display: "Black Han Sans", "Pretendard Variable", sans-serif;
-  --color-brand-50: #f4f0ff;
-  --color-brand-100: #e9e1ff;
-  --color-brand-500: #7c4dff;
-  --color-brand-600: #6a3cf0;
-  --color-brand-700: #5527d6;
-  --color-brand-900: #2a1170;
+  --font-sans: "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --font-display: "Spoqa Han Sans Neo", "Noto Sans KR", sans-serif;
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-500: #8055ed;
+  --color-brand-600: #6d42d8;
+  --color-brand-700: #5832b4;
+  --color-brand-900: #30204f;
+  --color-slate-500: #526278;
 }
-
 @layer base {
-  html { scroll-behavior: smooth; }
-  body { @apply bg-slate-50 font-sans text-slate-800 antialiased; }
-  h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
+  html { scroll-behavior: smooth; scroll-padding-top: 9rem; }
+  body { @apply m-0 bg-white font-sans text-slate-800 antialiased; word-break: keep-all; overflow-wrap: anywhere; }
+  h1, h2, h3, h4, h5, h6 { @apply font-display font-medium; letter-spacing: -0.02em; text-wrap: balance; }
+  p { text-wrap: pretty; }
+  button, a, input, select, textarea, summary { -webkit-tap-highlight-color: transparent; }
+  button:not(:disabled), summary { cursor: pointer; }
+  :focus-visible { outline: 3px solid #8055ed; outline-offset: 4px; }
+  input[type="checkbox"], input[type="range"] { accent-color: #6d42d8; }
+  ::selection { background: #ede9fe; color: #30204f; }
 }
-
-/* Tailwind v4: 다른 클래스에서 @apply로 재사용하려면 @utility로 정의해야 한다 */
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex min-h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50;
+  transition: background-color 160ms, color 160ms, border-color 160ms, box-shadow 160ms;
 }
-
+@utility numeric {
+  @apply font-display font-medium;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
 @layer components {
-  .container-x { @apply mx-auto w-full max-w-6xl px-4 sm:px-6; }
-  .card { @apply rounded-2xl border border-slate-200 bg-white shadow-sm; }
+  .container-x { @apply mx-auto w-full max-w-[1280px] px-5 sm:px-8; }
   .btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-700; }
-  .btn-outline { @apply btn border border-slate-300 bg-white text-slate-700 hover:border-brand-500 hover:text-brand-600; }
+  .btn-outline { @apply btn border border-slate-200 bg-white text-slate-700 hover:border-brand-500 hover:bg-brand-50; }
   .btn-ghost { @apply btn text-slate-600 hover:bg-slate-100; }
-  .input { @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-100; }
-  .badge { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold; }
-  .section-title { @apply mb-4 mt-10 flex items-center gap-2 text-xl text-slate-900; }
+  .icon-btn { @apply inline-flex size-11 shrink-0 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100; }
+  .input { @apply min-h-12 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100; }
+  .field-icon { @apply pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400; }
+  .field-with-icon { @apply pl-11; }
+  .badge { @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium; }
+  .card { @apply rounded-2xl border border-slate-200 bg-white; }
+  .section-title { @apply text-2xl sm:text-3xl; }
+  .section-note { @apply mt-2 text-sm leading-relaxed text-slate-500; }
   .table-x { @apply w-full text-left text-sm; }
-  .table-x th { @apply whitespace-nowrap border-b border-slate-200 px-3 py-2.5 font-semibold text-slate-500; }
-  .table-x td { @apply border-b border-slate-100 px-3 py-2.5; }
-  .skeleton { @apply mb-2 h-4 animate-pulse rounded bg-slate-200; }
+  .table-x th { @apply whitespace-nowrap border-b border-slate-200 bg-slate-50/70 px-4 py-3 font-medium text-slate-500; }
+  .table-x td { @apply border-b border-slate-100 px-4 py-4; }
+  .table-x tr:last-child td { border-bottom: 0; }
+  .skeleton { @apply animate-pulse rounded-lg bg-slate-100; }
+  .filter-chip { @apply btn rounded-full border border-slate-200 px-4 text-slate-600 hover:border-brand-500; }
+  .filter-chip[aria-pressed="true"] { @apply border-brand-600 bg-brand-600 text-white; }
+  .step-chip { @apply flex min-w-0 flex-1 flex-col items-center gap-2 text-center text-xs sm:flex-row sm:text-left sm:text-sm; }
+  .step-chip > span:first-child { @apply flex size-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white; }
+  .step-chip[aria-current="step"] { @apply text-brand-700; }
+  .step-chip[aria-current="step"] > span:first-child { @apply border-brand-600 bg-brand-600 text-white; }
 }
-
-/* 햄버거 ↔ X 아이콘 전환 */
-.burger span { @apply absolute left-0 block h-0.5 w-6 rounded bg-current transition-all duration-300; }
-.burger span:nth-child(1) { top: 4px; }
-.burger span:nth-child(2) { top: 11px; }
-.burger span:nth-child(3) { top: 18px; }
-.burger.open span:nth-child(1) { top: 11px; transform: rotate(45deg); }
-.burger.open span:nth-child(2) { opacity: 0; transform: translateX(8px); }
-.burger.open span:nth-child(3) { top: 11px; transform: rotate(-45deg); }
+.hero-surface { background: linear-gradient(115deg, #f2effa 0%, #f6f7fb 55%, #eef5f3 100%); }
+.product-photo { aspect-ratio: 4 / 3; background: #f1f3f5; position: relative; overflow: hidden; }
+.product-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 300ms; }
+.product-photo:hover img { transform: scale(1.05); }
+.product-photo::after { content: ""; position: absolute; inset: 0; border: 1px solid rgb(0 0 0 / 4%); pointer-events: none; }
+.chart-grid { stroke: #e2e8f0; stroke-dasharray: 3 5; }
+.chart-text { font-family: var(--font-display); font-size: 11px; fill: #64748b; }
+.chart-line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.modal { border: 0; padding: 0; margin: auto; max-height: 90dvh; width: min(540px, calc(100% - 32px)); border-radius: 24px; color: #1e293b; box-shadow: 0 24px 80px #0f172a30; }
+.modal::backdrop { background: rgb(15 23 42 / 45%); backdrop-filter: blur(4px); }
+.drawer { margin: 0 0 0 auto; width: min(360px, 90vw); max-height: 100dvh; height: 100dvh; border-radius: 0; transform: translateX(0); transition: transform 250ms ease-out; }
+@starting-style { .drawer[open] { transform: translateX(100%); } }
+.hamburger { position: relative; width: 22px; height: 20px; }
+.hamburger span { position: absolute; width: 22px; height: 2px; left: 0; background: currentColor; border-radius: 2px; transition: transform 200ms, opacity 200ms; }
+.hamburger span:nth-child(1) { top: 3px; }
+.hamburger span:nth-child(2) { top: 9px; }
+.hamburger span:nth-child(3) { top: 15px; }
+.hamburger.is-open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.hamburger.is-open span:nth-child(2) { opacity: 0; }
+.hamburger.is-open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+.skip-link { position: fixed; top: -100px; left: 1rem; z-index: 100; padding: 1rem; background: white; }
+.skip-link:focus { top: 1rem; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
