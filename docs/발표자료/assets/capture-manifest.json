@@ -1,0 +1,44 @@
+{
+  "captured_at": "2026-11-05T02:50:18.856194+00:00",
+  "default_viewport": [
+    1440,
+    1000
+  ],
+  "product_viewport": [
+    1440,
+    1600
+  ],
+  "records": [
+    {
+      "file": "home.png",
+      "url": "https://picktiming.netlify.app/",
+      "mode": "Netlify 브라우저 데모"
+    },
+    {
+      "file": "product-chart.png",
+      "url": "https://picktiming.netlify.app/product/1",
+      "mode": "Netlify 브라우저 데모"
+    },
+    {
+      "file": "target-alert.png",
+      "url": "https://picktiming.netlify.app/product/1",
+      "mode": "Netlify 브라우저 데모"
+    },
+    {
+      "file": "watchlist.png",
+      "url": "https://picktiming.netlify.app/watchlist",
+      "mode": "Netlify 브라우저 데모"
+    },
+    {
+      "file": "signup.png",
+      "url": "https://picktiming.netlify.app/signup",
+      "mode": "Netlify 브라우저 데모"
+    },
+    {
+      "file": "admin-users.png",
+      "url": "https://picktiming.netlify.app/admin/users",
+      "mode": "Netlify 브라우저 데모"
+    }
+  ],
+  "notice": "실제 서비스 UI를 캡처했으며 상품·가격·계정은 명시된 데모 데이터이다."
+}

@@ -1,0 +1,103 @@
+{
+  "pdfs": [
+    {
+      "file": "3조_최종발표_PPT.pdf",
+      "pages": 7,
+      "out_of_page_text": [],
+      "empty_pages": []
+    },
+    {
+      "file": "pdf/산출물/01_기획분석_산출물.pdf",
+      "pages": 4,
+      "out_of_page_text": [],
+      "empty_pages": []
+    },
+    {
+      "file": "pdf/산출물/02_설계_산출물.pdf",
+      "pages": 3,
+      "out_of_page_text": [],
+      "empty_pages": []
+    },
+    {
+      "file": "pdf/산출물/03_구현_산출물.pdf",
+      "pages": 3,
+      "out_of_page_text": [],
+      "empty_pages": []
+    },
+    {
+      "file": "pdf/산출물/04_배포_산출물.pdf",
+      "pages": 2,
+      "out_of_page_text": [],
+      "empty_pages": []
+    },
+    {
+      "file": "pdf/산출물/05_피드백_산출물.pdf",
+      "pages": 3,
+      "out_of_page_text": [],
+      "empty_pages": []
+    },
+    {
+      "file": "pdf/프로젝트_발표자료.pdf",
+      "pages": 7,
+      "out_of_page_text": [],
+      "empty_pages": []
+    },
+    {
+      "file": "pdf/프로젝트_진행일지_1단계_기획분석.pdf",
+      "pages": 1,
+      "out_of_page_text": [],
+      "empty_pages": []
+    },
+    {
+      "file": "pdf/프로젝트_진행일지_2단계_설계.pdf",
+      "pages": 1,
+      "out_of_page_text": [],
+      "empty_pages": []
+    },
+    {
+      "file": "pdf/프로젝트_진행일지_3단계_구현.pdf",
+      "pages": 1,
+      "out_of_page_text": [],
+      "empty_pages": []
+    },
+    {
+      "file": "pdf/프로젝트_진행일지_4단계_배포.pdf",
+      "pages": 1,
+      "out_of_page_text": [],
+      "empty_pages": []
+    },
+    {
+      "file": "pdf/프로젝트_진행일지_5단계_피드백.pdf",
+      "pages": 1,
+      "out_of_page_text": [],
+      "empty_pages": []
+    },
+    {
+      "file": "발표자료/3분_발표대본.pdf",
+      "pages": 2,
+      "out_of_page_text": [],
+      "empty_pages": []
+    },
+    {
+      "file": "발표자료/7분_시연시나리오.pdf",
+      "pages": 3,
+      "out_of_page_text": [],
+      "empty_pages": []
+    },
+    {
+      "file": "발표자료/수정사항_보고서.pdf",
+      "pages": 4,
+      "out_of_page_text": [],
+      "empty_pages": []
+    }
+  ],
+  "broken_links": [],
+  "ppt_shape_overflow": [],
+  "hwpx_missing_text": [],
+  "ppt_slides": 7,
+  "speaker_notes_match_script": true,
+  "timing_matches_script": true,
+  "script_budget_seconds": 170,
+  "ppt_copies_identical": true,
+  "pdf_copies_identical": true
+}

@@ -18,6 +18,7 @@ Render 배포는 GitHub가 요청하지 않고, Render의 Auto-Deploy(**After CI
 | `EC2_USER` | `ubuntu` | Ubuntu AMI 기본 사용자 | 자동 배포 |
 | `EC2_SSH_KEY` | `.pem` 파일 **전체 내용** (`-----BEGIN ... KEY-----`부터 `-----END ... KEY-----`까지 줄바꿈 포함) | 08 문서 1단계의 키 페어 | 자동 배포 |
 | `DATA_GO_KR_KEY` | `.env`의 같은 이름 값 (선택) | 로컬 `.env` | Render 참가격 수집 |
+| `NAVER_SEARCH_CLIENT_ID`, `NAVER_SEARCH_CLIENT_SECRET` | 네이버 검색 API용 값 (선택) | 네이버 개발자 콘솔 | Render용 네이버 쇼핑 수집 |
 
 > `RENDER_DEPLOY_HOOK_URL`은 **등록하지 않습니다**. Render Auto-Deploy(After CI Checks Pass)와 함께 쓰면 같은 커밋이 두 번 배포됩니다.
 > (Render Auto-Deploy를 Off로 두고 GitHub가 배포를 요청하게 할 때만 등록)
@@ -50,9 +51,13 @@ Render 배포는 GitHub가 요청하지 않고, Render의 Auto-Deploy(**After CI
 | B. GitHub Actions IP 대역 허용 | https://api.github.com/meta 의 `actions` 대역 등록 | 대역이 매우 많고 자주 바뀌어 관리가 어려움 |
 | C. 자체 호스팅 러너 / AWS SSM | EC2에 러너 설치 또는 SSM 명령으로 배포 | 가장 안전하지만 `deploy.yml` 수정 필요(팀 승인) |
 
-학기 프로젝트 규모에서는 **A + 키 파일 비공개 + 필요 없을 때 인스턴스 중지**가 현실적입니다.
+환경에 맞는 접속 범위를 선택합니다. A는 넓은 공개 범위이므로 키 관리·접속 기록 점검과
+불필요한 노출 제거가 필요합니다. 현재 구성만으로 C 방식이 구현되었다고 표현하지 않습니다.
 
 ## 4. 동작 확인
+
+기준 커밋 `279a4ce`에서 CI는 통과했고 EC2 실제 배포는 건너뛰었습니다.
+성공한 작업 안에서도 실제 배포 단계가 실행되었는지 확인합니다.
 
 1. 아무 영향 없는 변경으로 확인하려면 Actions → **Deploy → Run workflow**(수동 실행)에서 대상을 골라 실행합니다.
    수동 실행은 선택한 대상에 **전체 배포**합니다(EC2는 전체 재빌드).

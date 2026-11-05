@@ -1,11 +1,14 @@
 # 08. [배포 3단계] AWS EC2 — 단독 풀스택 (http://picktiming.duckdns.org)
 
-EC2 한 대에서 [`docker-compose.yml`](../../docker-compose.yml)의 세 컨테이너로 화면·API·가격 수집을 모두 운영합니다.
+EC2 한 대에서 [`docker-compose.yml`](../../docker-compose.yml)의 세 컨테이너로 화면·API·가격 수집을 운영하도록 구성합니다.
 Render를 호출하지 않으며, DB만 **TiDB**(Render와 공유)를 씁니다.
+
+현재는 배포 코드가 준비된 상태이며, 기준 커밋 `279a4ce`의 실제 SSH 배포는 건너뛰었습니다.
+아래 절차와 확인을 마치기 전에는 EC2 운영 완료로 발표하지 않습니다.
 
 | 컨테이너 | 역할 |
 |---|---|
-| `web` (nginx:1.27-alpine) | 80번 포트. `frontend/` 정적 파일 + `/api`, `/docs`, `/health`를 `api`로 프록시 |
+| `web` (deploy/web.Dockerfile) | React를 빌드해 nginx로 제공. `/api`, `/docs`, `/health`를 `api`로 프록시 |
 | `api` (backend 이미지) | FastAPI, TiDB 접속 |
 | `rpa` (rpa 이미지) | 스케줄러 — 매시 수집 등, `http://api:8000` 호출 |
 
@@ -16,7 +19,7 @@ Render를 호출하지 않으며, DB만 **TiDB**(Render와 공유)를 씁니다.
 | AMI | Ubuntu Server 24.04 LTS (22.04도 가능) |
 | 인스턴스 유형 | t3.small(2 GB) 권장. 프리 티어 t2/t3.micro(1 GB)도 가능하나 **스왑 2 GB 필수**(아래 4단계) |
 | 키 페어 | 새로 생성(.pem) → 안전하게 보관. GitHub Actions에도 등록함(10 문서) |
-| 스토리지 | 20 GB 이상 (Docker 이미지 2개 + 빌드 캐시) |
+| 스토리지 | 20 GB 이상 (web·api·rpa 이미지 + 빌드 캐시) |
 | 보안 그룹 인바운드 | 22(SSH), 80(HTTP, 0.0.0.0/0), 443(HTTPS 구성 시) — 22번은 10 문서의 주의사항 참고 |
 
 ## 2. 고정 IP와 DuckDNS

@@ -4,10 +4,11 @@
 
 | 이미지 | Dockerfile | 빌드 컨텍스트 | 내용 | 사용처 |
 |---|---|---|---|---|
-| API | [`backend/Dockerfile`](../../backend/Dockerfile) | `./backend` | API만 (프런트엔드는 nginx가 담당) | EC2, CI |
-| 풀스택 | [`Dockerfile(저장소 루트)`](../../Dockerfile) | 저장소 루트 `.` | API + `frontend/` (`FRONTEND_DIR=/app/frontend`) | Render |
+| API | [`backend/Dockerfile`](../../backend/Dockerfile) | 저장소 루트 `.` | API만 (프런트엔드는 nginx가 담당) | EC2, CI |
+| 풀스택 | [`Dockerfile(저장소 루트)`](../../Dockerfile) | 저장소 루트 `.` | API + React 빌드 결과 (`FRONTEND_DIR=/app/frontend`) | Render |
 
-저장소 루트를 컨텍스트로 쓰는 Render 빌드는 루트 [`.dockerignore`](../../.dockerignore)가 `backend/app`, `backend/requirements.txt`, `frontend/`만 남깁니다.
+Render는 루트 [`Dockerfile`](../../Dockerfile)에서 React를 빌드하고 FastAPI와 함께 제공합니다.
+Python 의존성은 루트 [`requirements.txt`](../../requirements.txt) 하나로 관리합니다.
 
 ## 1. 시작 과정
 
@@ -16,11 +17,12 @@
 1. 환경 변수 읽기 → `APP_ENV=production`인데 `JWT_SECRET`·`RPA_API_KEY`가 비어 있거나 기본값이면 **기동 거부**
 2. `init_db()` → 테이블이 없으면 생성 (`create_all`, 별도 마이그레이션 도구 없음)
 3. CORS 설정(`ALLOWED_ORIGINS`), 라우터 6개를 `/api/v1` 아래에 등록
-4. `GET /health` → DB에 `SELECT 1`을 실행해 성공하면 `{"status":"ok"}` — Render·EC2·CI가 모두 이 경로로 상태를 확인
-5. 프런트엔드 폴더가 있으면 함께 서빙 — `FRONTEND_DIR`(Render: `/app/frontend`), 비어 있으면 저장소의 `frontend/`(로컬)를 찾습니다.
+4. `GET /health` → DB에 `SELECT 1`을 실행하고 `status`, `env`, `gemini`를 응답합니다. `gemini`는 키 설정 여부이며 실제 생성 성공을 의미하지 않습니다.
+5. 프런트엔드 폴더가 있으면 함께 서빙 — `FRONTEND_DIR`(Render: `/app/frontend`), 비어 있으면 저장소의 `frontend/dist/`(로컬 빌드 결과)를 찾습니다.
    API 경로(`/api/v1`, `/health`, `/docs`, `/openapi.json`)가 먼저 처리되고 나머지는 정적 파일입니다.
    - `/js/config.js` → `API_BASE_URL: "/"`(같은 도메인)를 동적으로 응답 (저장소의 데모용 config.js 대신)
-   - 없는 경로는 `404.html`, 보안 헤더(`X-Frame-Options`, `nosniff`, `Referrer-Policy`)를 추가
+   - React 경로는 SPA `index.html`로 연결하고, 없는 정적 파일은 404 처리합니다.
+   - 보안 헤더(`X-Frame-Options`, `nosniff`, `Referrer-Policy`)를 추가합니다.
    - 폴더가 없으면(EC2 api 컨테이너 — 화면은 nginx 담당) `/`는 API 안내 JSON을 돌려줍니다.
 6. DB 접속: `DB_SSL_CA`에 값이 있으면 TLS(인증서·호스트 이름 검증). 그 경로의 파일이 없으면(Windows 로컬) certifi 인증서를 사용하므로
    같은 `.env`를 로컬·EC2·Render에서 그대로 쓸 수 있습니다([`database.py`](../../backend/app/database.py)).
@@ -102,7 +104,16 @@ Docker 실행 명령은 `uvicorn app.main:app --port ${PORT:-8000}` 입니다. R
 
 ## 7. 테스트
 
-- `cd backend && pytest -q` → 33건(프런트엔드 서빙·DB TLS 옵션 포함). `.env`의 TiDB 값을 쓰지 않고 임시 SQLite로 실행하며, `TEST_DATABASE_URL`을 주면 그 DB로 실행(CI는 MySQL 8).
+- `cd backend && pytest -q` → 기준 커밋 `279a4ce`에서 51건 통과. `.env`의 TiDB 값을 쓰지 않고 임시 SQLite로 실행하며, `TEST_DATABASE_URL`을 주면 그 DB로 실행(CI는 MySQL 8).
 - 테스트는 시작할 때 `seed(reset=True)`로 **DB를 비웁니다**. `TEST_DATABASE_URL`에 TiDB 운영 주소를 넣지 않습니다.
+
+## 8. 인증·회원 관리와 발표 시 주의
+
+- 가입 비밀번호는 대·소문자·숫자·특수문자를 포함한 8자 이상입니다.
+- Google·Naver·Kakao OAuth 연결 코드가 있으며 실제 사용에는 각 키·공개 URL·콜백 등록이 필요합니다.
+- `/auth/demo-login`은 `DEMO_LOGIN_ENABLED` 설정에 따라 허용합니다.
+- 관리자는 회원 검색·권한 변경 API를 사용합니다. 테스트 관리자·자기 자신·마지막 관리자 권한 변경에는 제한이 있습니다.
+- 모델·AI 검증 코드가 있다는 사실과 모델 정확도·환각률의 실측 성과를 구분합니다.
+- API 세부 스키마는 `/docs`와 `backend/app/routers/`가 기준입니다.
 
 다음 문서: [03. 프런트엔드](03-frontend.md)

@@ -19,7 +19,7 @@
 | Backend (lint · pytest on SQLite) | `ruff check backend`, `pytest` |
 | Backend (pytest on MySQL 8) | MySQL 8.0 서비스 컨테이너에서 같은 테스트 (TiDB 호환성 사전 확인) |
 | RPA (lint · pytest) | `ruff check rpa`, `pytest` |
-| Frontend | JS 문법 검사, `build.sh` 동작 확인 |
+| Frontend | `npm ci`·React 프로덕션 빌드, SPA 진입점·데모 설정 확인 |
 | Docker build | api·rpa 이미지 빌드·`/health` 확인, **Render 풀스택 이미지 빌드 후 `/`(화면)와 `/js/config.js`(같은 도메인 설정) 확인**, `docker compose config` 검증 |
 
 ## 3. 배포 대상 판별 (`detect-changes.sh`)
@@ -28,13 +28,15 @@
 
 | 바뀐 경로 | Netlify | Render | EC2 (full) |
 |---|:---:|:---:|:---:|
-| `frontend/` | ✅ | ✅ (풀스택 이미지에 포함) | ✅ (git pull만으로 반영) |
+| `frontend/` | ✅ | ✅ (풀스택 이미지에 포함) | ✅ (web 이미지 재빌드) |
 | `netlify.toml` | ✅ | – | – |
 | `backend/` | – | ✅ | ✅ (api만 재빌드) |
 | `render.yaml`, `.dockerignore`(루트) | – | ✅ | – |
+| `Dockerfile`(루트) | – | ✅ | – |
+| `requirements.txt` | – | ✅ | ✅ (api·rpa 재빌드) |
 | `rpa/` | – | – | ✅ (rpa만 재빌드) |
 | `docker-compose.yml` | – | – | ✅ (전체 재빌드) |
-| `deploy/` | – | – | ✅ (nginx 재시작) |
+| `deploy/` | – | – | ✅ (web 이미지 재빌드) |
 | 그 외 (`docs/`, `README.md`, `.claude/`, 워크플로 등) | – | – | – |
 
 - EC2는 **full 모드**(nginx + api + rpa)입니다. `EC2_MODE` 변수는 등록하지 않거나 `full`로 둡니다.
@@ -52,9 +54,9 @@ CHANGED_FILES="backend/app/main.py" EVENT=push bash .github/scripts/detect-chang
 
 | 대상 | 방식 | 필요한 값 (없으면 그 대상만 건너뜀) |
 |---|---|---|
-| Render | **Render Auto-Deploy "After CI Checks Pass"**: 이 커밋의 GitHub 검사가 모두 통과하면 Render가 직접 배포(Build Filter: `backend/**`, `frontend/**`, `render.yaml`, `.dockerignore`). `deploy.yml`의 Render 작업은 Hook이 없어 건너뜀 | Render 대시보드 설정(07 문서). `RENDER_DEPLOY_HOOK_URL`은 등록하지 않음(Auto-Deploy Off일 때만 사용) |
+| Render | **Render Auto-Deploy "After CI Checks Pass"**: GitHub 검사 통과 후 직접 배포(Build Filter: `backend/**`, `frontend/**`, `Dockerfile`, `requirements.txt`, `render.yaml`, `.dockerignore`). `deploy.yml`의 Render 작업은 Hook이 없으면 건너뜀 | Render 대시보드 설정(07 문서). `RENDER_DEPLOY_HOOK_URL`은 등록하지 않음(Auto-Deploy Off일 때만 사용) |
 | EC2 | SSH 접속 → `git pull --ff-only origin main` → 바뀐 서비스만 `docker compose up -d --build` → `http://localhost/health` 확인 | Secrets `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, Variable `EC2_APP_DIR`(기본 `~/picktiming`) |
-| Netlify | (Actions 방식) `build.sh` → zip을 Netlify API로 업로드 | Secrets `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID` |
+| Netlify | (Actions 방식) React 빌드 결과 `frontend/dist`를 zip으로 Netlify API에 업로드 | Secrets `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID` |
 
 > Netlify는 **Git 연동(Netlify가 저장소를 직접 빌드)과 Actions 방식 중 하나만** 씁니다. 이미 Git 연동으로 배포했다면
 > `NETLIFY_*` Secret을 등록하지 않습니다(중복 배포 방지). 데모 모드 유지를 위해 `API_BASE_URL`은 어디에도 등록하지 않습니다.
@@ -72,3 +74,13 @@ CHANGED_FILES="backend/app/main.py" EVENT=push bash .github/scripts/detect-chang
 - 공개 저장소에서 **60일간 저장소 활동이 없으면 예약 워크플로가 자동으로 꺼집니다**. Actions 화면에서 다시 켭니다.
 
 다음 문서: [06. DB 준비](06-database.md)
+
+## 6. 최근 확인과 결과 해석
+
+기준 커밋 `279a4ce`, [Deploy 41947934806](https://github.com/fsclass-n/picktiming/actions/runs/41947934806)의
+React·백엔드 SQLite/MySQL·RPA·Docker 검사가 통과했습니다.
+브라우저 9개 시나리오는 별도 로컬 검사이며 CI에 자동 연결되어 있다고 표현하지 않습니다.
+
+배포 작업의 초록색 상태만으로 실제 배포를 단정하지 않습니다. 키가 없을 때 건너뜀 안내만 성공할 수 있습니다.
+Netlify·Render는 실제 서비스의 새 UI 자산을 확인했고 EC2의 SSH 배포는 건너뛴 상태입니다.
+`docs/`만 바꾸는 이번 문서 작업은 앱 배포 대상이 아닙니다.

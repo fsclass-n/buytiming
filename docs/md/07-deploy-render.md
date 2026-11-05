@@ -1,10 +1,15 @@
 # 07. [배포 2단계] Render — 단독 풀스택 (https://picktiming.onrender.com)
 
 Render 서비스 하나가 **API와 프런트엔드 화면을 같은 도메인으로** 제공합니다.
-이미지: [`Dockerfile(저장소 루트)`](../../Dockerfile) (빌드 컨텍스트 = 저장소 루트, 루트 [`.dockerignore`](../../.dockerignore)로 `backend/app`·`frontend/`만 포함).
+이미지: [`Dockerfile(저장소 루트)`](../../Dockerfile). 저장소 루트를 컨텍스트로 사용하고,
+Node 단계에서 React를 빌드한 뒤 Python 단계에서 루트 `requirements.txt`를 설치합니다.
 가격 수집은 GitHub Actions가 매시 대신 실행합니다(10 문서).
 
 준비물: 값을 채운 로컬 `.env`(06 문서, [`.env.example`](../../.env.example) 기반), GitHub 저장소 `fsclass-n/picktiming` 접근 권한
+
+기준 커밋 `279a4ce`에서 새 UI·`/health`·공개 추천 API의 정상 응답을 확인했습니다.
+무료 플랜의 콜드 스타트는 남아 있습니다. 테스트 계정은 `DEMO_LOGIN_ENABLED`,
+소셜 로그인은 제공자별 키·`PUBLIC_BASE_URL`·콜백 등록이 필요합니다.
 
 ## 1. 서비스 만들기 / 기존 서비스 설정 바꾸기
 
@@ -24,7 +29,7 @@ Render 대시보드에서 이미 `picktiming` 서비스를 만들었다면 **Set
 | Instance Type | **Free** |
 | Health Check Path | `/health` |
 | Auto-Deploy | **After CI Checks Pass** (3단계) |
-| Build Filters → Included Paths | `backend/**`, `frontend/**`, `render.yaml`, `.dockerignore` (3단계) |
+| Build Filters → Included Paths | `backend/**`, `frontend/**`, `Dockerfile`, `requirements.txt`, `render.yaml`, `.dockerignore` (3단계) |
 
 > 예전 설정(`./backend/Dockerfile`, 컨텍스트 `./backend`)으로 두면 API만 뜨고 화면(`/`)은 JSON 안내만 나옵니다.
 
@@ -55,7 +60,7 @@ Settings → Build & Deploy → **Auto-Deploy: After CI Checks Pass**
 | **After CI Checks Pass** | push하면 GitHub Actions 검사가 모두 통과한 뒤 자동 배포 | **권장** — 커밋하면 자동 배포 + 테스트 실패 시 배포 안 함 |
 | Off | 자동 배포 없음 (Deploy Hook·수동 배포만) | 사용 안 함 |
 
-- 같은 화면의 **Build Filters → Included Paths**에 `backend/**`, `frontend/**`, `render.yaml`, `.dockerignore`를 넣으면
+- 같은 화면의 **Build Filters → Included Paths**에 `backend/**`, `frontend/**`, `Dockerfile`, `requirements.txt`, `render.yaml`, `.dockerignore`를 넣으면
   문서(`docs/`)·EC2 설정만 바뀐 커밋은 Render를 다시 빌드하지 않습니다.
 - 이 방식에서는 GitHub Secret `RENDER_DEPLOY_HOOK_URL`을 **등록하지 않습니다**. 등록하면 Actions도 배포를 요청해 두 번 배포됩니다.
 - Render는 그 커밋의 **모든** GitHub 검사가 성공(또는 건너뜀)해야 배포합니다. 같은 커밋에서 EC2 배포 작업이 실패하면 Render도 배포하지 않으니,

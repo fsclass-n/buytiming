@@ -1,18 +1,25 @@
 # 11. 최종 점검과 문제 해결
 
+확인 기준: `279a4ce`, 2026-11-05. 아래 체크박스는 환경별 운영자가 확인할 목록입니다.
+현재 확인된 검증은 백엔드 51건·RPA 11건·브라우저 9개 시나리오 및 CI입니다.
+Netlify·Render 새 UI는 확인했고 EC2 운영은 확인 전입니다.
+
+발표용 점검은 [7분 시연 시나리오](../발표자료/7분_시연시나리오.md)를 사용합니다.
+PPT는 170초 대본+10초 전환 여유이며 실제 리허설 시간을 측정해야 합니다.
+
 ## 1. 단계별 완료 점검표
 
 ### DB · `.env` (06)
 - [ ] TiDB Starter 인스턴스 생성, `picktiming` DB 생성, 허용 IP(개발 PC, EC2, Render) 설정
 - [ ] 로컬 `.env` 작성: `copy .env.example .env` → `DATABASE_URL`(TiDB), `JWT_SECRET`, `RPA_API_KEY` 채움 (나머지 필수 값은 예시 그대로)
 - [ ] 로컬에서 `python -m app.seed` 1회, 데모·관리자 비밀번호 보관
-- [ ] 로컬 `uvicorn app.main:app --reload` → http://localhost:8000 화면·로그인 동작
+- [ ] `frontend/`에서 `npm ci && npm run build`, 로컬 `uvicorn app.main:app --reload` → http://localhost:8000 화면·로그인 동작
 
 ### Render — 단독 풀스택 (07)
 - [ ] 서비스 이름 `picktiming`, Docker, Singapore, Free, Health Check `/health`
 - [ ] Dockerfile Path `./Dockerfile`, Build Context `.`
 - [ ] Environment → **Add from .env**로 로컬 `.env` 붙여 넣기 (`FRONTEND_DIR`은 넣지 않음)
-- [ ] Auto-Deploy **After CI Checks Pass**, Build Filters Included Paths `backend/**`, `frontend/**`, `render.yaml`, `.dockerignore`
+- [ ] Auto-Deploy **After CI Checks Pass**, Build Filters Included Paths `backend/**`, `frontend/**`, `Dockerfile`, `requirements.txt`, `render.yaml`, `.dockerignore`
 - [ ] `/health` → `"status":"ok"`, `/` → 홈 화면, `/js/config.js` → `API_BASE_URL: "/"`
 
 ### EC2 — 단독 풀스택 (08)
@@ -52,6 +59,9 @@
 | 화면: "API 서버에 연결할 수 없습니다" | 브라우저 F12 콘솔·Network | 같은 도메인 호출이라 CORS 문제는 아님 → `/health` 응답과 서버 로그 확인 |
 | Render 첫 화면이 1분 가까이 멈춤 | — | 무료 플랜이 잠들었다 깨는 중. 정상 |
 | Netlify가 실제 데이터를 안 보여 줌 | — | 의도된 동작(데모 모드 유지, 09 문서) |
+| Netlify에 이전 화면이 보임 | Deploys·GitHub 연결·최신 자산 | 연결 저장소 `fsclass-n/picktiming`, 배포 커밋·게시 상태·`frontend/dist` 설정 확인 |
+| 테스트 관리자 권한 변경이 거부됨 | 화면 안내·403 응답 | 조회 전용 제한. 시연에서 실제 회원 권한을 변경하지 않음 |
+| 목표가 저장 후 새 알림이 바로 없음 | 관심 상품·다음 수집 | 저장과 가격 도달 알림 생성은 별개. 운영 수집 후 조건을 판정 |
 | Collect (Render) 실패: `401 INVALID_RPA_KEY` | Actions 로그 | Secret `RENDER_RPA_API_KEY` ≠ Render `RPA_API_KEY` |
 | 수집 결과 `inserted: 0, duplicate: N` | — | 같은 시간대에 다른 수집기(EC2/Actions)가 먼저 저장함. 정상 |
 | Render에서 push 후 자동 배포가 안 됨 | Render Events, GitHub 커밋의 검사 결과 | Auto-Deploy = After CI Checks Pass인지, 실패한 검사가 없는지, 바뀐 경로가 Build Filter에 포함되는지 |

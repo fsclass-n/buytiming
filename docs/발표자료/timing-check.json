@@ -1,0 +1,45 @@
+{
+  "method": "Microsoft Heami Desktop, ko-KR, Rate=0; spoken script plus transition only",
+  "story_sha256": "3c6ffe6bfab5174bde7f9f36ecb9b5d30d8468f3a49691c2f3944c2bb43db429",
+  "slides": [
+    {
+      "slide": 1,
+      "reference_tts_seconds": 13.39,
+      "budget_seconds": 15
+    },
+    {
+      "slide": 2,
+      "reference_tts_seconds": 22.06,
+      "budget_seconds": 25
+    },
+    {
+      "slide": 3,
+      "reference_tts_seconds": 21.38,
+      "budget_seconds": 25
+    },
+    {
+      "slide": 4,
+      "reference_tts_seconds": 28.61,
+      "budget_seconds": 35
+    },
+    {
+      "slide": 5,
+      "reference_tts_seconds": 21.92,
+      "budget_seconds": 25
+    },
+    {
+      "slide": 6,
+      "reference_tts_seconds": 22.64,
+      "budget_seconds": 25
+    },
+    {
+      "slide": 7,
+      "reference_tts_seconds": 17.26,
+      "budget_seconds": 20
+    }
+  ],
+  "reference_tts_total_seconds": 147.26,
+  "script_budget_seconds": 170,
+  "transition_buffer_seconds": 10,
+  "human_rehearsal": "not performed; presenter must rehearse with timer"
+}

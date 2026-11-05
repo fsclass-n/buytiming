@@ -2,19 +2,22 @@
 
 ## 1. 서비스 한 줄 설명
 
-**RPA가 쇼핑몰 가격과 공공 가격(한국소비자원 참가격)을 1시간마다 수집**하고,
-**scikit-learn 모델이 "과거 패턴상 지금이 싼 시점인가"를 점수로 판정**하며,
+**RPA가 상품 가격을 1시간 주기로 수집**하고(공공 가격은 설정된 경우 별도 일일 작업),
+**학습 모델 또는 규칙이 "과거 흐름상 지금이 싼 시점인가"를 점수로 판정**하며,
 **Google Gemini가 그 근거를 자연어로 설명**하는 가격 비교·구매 적기 추천 서비스입니다.
-(Final-Project 3조: 김길동(조장), 박미금, 이오리, 홍기흥)
+(Final-Project 3조: 박미금(조장·발표자), 김길동, 이오리, 홍기흥)
+
+개정 기준은 `279a4ce`입니다. [현재 상태·발표 자료](README.md)를 함께 확인하세요.
+효과·모델 정확도·수집 성공률은 별도 측정 자료 없이 수치로 단정하지 않습니다.
 
 ## 2. 기술 스택
 
 | 구분 | 기술 | 위치 |
 |---|---|---|
-| Frontend | HTML5, CSS3, Vanilla JavaScript(ES Modules), Bootstrap 5, Plotly.js — 번들러·npm 없음 | `frontend/` |
+| Frontend | React 19, Vite 8, Tailwind CSS v4, FontAwesome, SVG 가격 차트, 관리자 Plotly | `frontend/` |
 | Backend | Python 3.11.9, FastAPI, SQLAlchemy 2, PyMySQL, PyJWT, bcrypt | `backend/` |
 | AI / ML | Google Gemini(`gemini-2.5-flash`), scikit-learn RandomForest, pandas, NumPy | `backend/app/ai`, `backend/app/ml` |
-| RPA | Requests, BeautifulSoup4, pandas, 내장 스케줄러 | `rpa/` |
+| RPA | Requests, BeautifulSoup4, pandas, 내장 스케줄러, 선택적 Playwright·네이버 검색·S3 | `rpa/` |
 | DB | TiDB Cloud(로컬·Render·EC2 공용), SQLite(자동 테스트), MySQL 8(CI 호환성 테스트) | — |
 | 배포 | Netlify, Render(Docker), AWS EC2(docker compose + nginx) | `netlify.toml`, `render.yaml`, `docker-compose.yml`, `deploy/` |
 | CI/CD | GitHub Actions | `.github/` |
@@ -23,15 +26,16 @@
 
 ```
 picktiming/
-├── frontend/                 # Netlify 정적 사이트 (EC2에서는 nginx가 같은 파일을 서빙)
-│   ├── *.html                # 화면 10개 + 404
-│   ├── css/style.css
-│   ├── js/api.js             # REST 클라이언트 (API_BASE_URL 없으면 데모 모드)
-│   ├── js/mock.js            # 백엔드와 같은 응답 형식의 브라우저 목업 API
-│   ├── js/common.js          # 공통 레이아웃·인증 처리
-│   ├── js/config.js          # API 주소 (Netlify 빌드 때 build.sh가 다시 생성)
-│   ├── js/pages/*.js         # 화면별 스크립트
-│   └── build.sh              # Netlify 빌드: API_BASE_URL → js/config.js
+├── frontend/                 # Vite가 빌드하는 React SPA
+│   ├── src/App.jsx           # 고객 화면·검색·차트·모달·가입 상태
+│   ├── src/index.css         # Tailwind v4 테마·반응형·키보드 포커스
+│   ├── src/lib/api.js        # REST 클라이언트
+│   ├── src/lib/mock.js       # 브라우저 데모 API
+│   ├── src/lib/auth.jsx      # 인증 상태
+│   ├── src/pages/Admin*      # 지연 로드하는 관리자 화면
+│   ├── public/js/config.js   # 커밋되는 값은 데모 모드
+│   ├── tests/ui_smoke.py     # 로컬 브라우저 회귀 검사
+│   └── dist/                # 빌드 결과(Git 제외)
 ├── backend/                  # FastAPI (Render · EC2 공용 Docker 이미지)
 │   ├── app/main.py           # 앱 생성, CORS, 라우터 등록, /health
 │   ├── app/config.py         # 환경 변수 설정
@@ -43,19 +47,20 @@ picktiming/
 │   ├── app/ai/gemini.py      # Gemini 프롬프트·검증·템플릿 대체
 │   ├── app/jobs/             # 주간 리포트(엑셀)
 │   ├── app/seed.py           # 시연 데이터
-│   ├── tests/                # pytest 29건
-│   ├── Dockerfile            # EC2·CI용 API 이미지 (컨텍스트 ./backend)
-│   └── Dockerfile     # Render용 풀스택 이미지: API + frontend/ (컨텍스트 = 저장소 루트)
+│   ├── tests/                # pytest
+│   └── Dockerfile            # EC2·CI용 API 이미지 (컨텍스트 = 저장소 루트)
 ├── rpa/                      # 가격 수집기 (EC2 컨테이너)
 │   ├── collector/            # http, parsers, jobs, scheduler, api_client
 │   ├── malls.json            # 쇼핑몰별 CSS 셀렉터
 │   ├── public_price_map.json # 참가격 상품 ID ↔ 모델 번호
-│   ├── tests/                # pytest 7건
+│   ├── tests/                # pytest
 │   └── Dockerfile
 ├── deploy/                   # nginx.conf, config.same-origin.js, ec2-setup.sh
 ├── docker-compose.yml        # EC2: web(nginx) + api + rpa (DB는 TiDB)
 ├── render.yaml               # Render Blueprint (서비스 이름 picktiming, Dockerfile)
-├── .dockerignore             # 저장소 루트 컨텍스트 빌드(Render)에 backend/app·frontend만 포함
+├── Dockerfile                # Render 풀스택: React 빌드 + FastAPI
+├── requirements.txt          # Python 통합 의존성
+├── .dockerignore             # 이미지에 불필요한 문서·로컬 파일 제외
 ├── netlify.toml              # Netlify (base=frontend, 데모 모드)
 ├── .github/                  # ci.yml, deploy.yml, collect-render.yml, scripts/detect-changes.sh
 ├── .env.example              # 환경 변수 예시 (.env는 Git 제외)

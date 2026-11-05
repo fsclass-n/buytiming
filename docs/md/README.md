@@ -3,17 +3,29 @@
 이 폴더는 픽타이밍 프로젝트 전체를 이해하고, **GitHub를 통해 Render와 AWS EC2에 각각 독립된 풀스택으로 배포**하기 위한 단계별 문서입니다.
 번호 순서대로 읽고 진행하면 됩니다.
 
+문서 개정 기준: `279a4ce`, 2026-11-05. 현재 구조는 아래 운영 문서,
+검증·미확인 상태는 이 목록, 이전 자료의 정정 사유는 최종 발표 수정 보고서를 기준으로 봅니다.
+
+## 최종 발표와 제출 파일
+
+- [최종 발표 PPT](../3조_최종발표_PPT.pptx) · [최종 발표 PDF](../3조_최종발표_PPT.pdf)
+- [3분 발표 대본](../발표자료/3분_발표대본.md) · [7분 시연 시나리오](../발표자료/7분_시연시나리오.md)
+- [제작 기준·확인 근거](../발표자료/제작기준.md) · [수정 보고서](../발표자료/수정사항_보고서.md)
+- 기존 `프로젝트_발표자료.pptx`와 대응 PDF도 동일 내용으로 갱신합니다.
+- 단계별 산출물은 `docs/산출물/`, 진행일지는 `docs/`, PDF는 `docs/pdf/`에 있습니다.
+  원본 일정은 계획으로 유지하고 미확인 회의·성과·발표 기록은 완료 사실에서 제외합니다.
+
 ## 목표 구성 (확정)
 
 | 구분 | 주소 | 역할 | 상태 |
 |---|---|---|---|
-| Netlify | https://picktiming.netlify.app | **프런트엔드 전용 — 데모 모드**(서버 없이 브라우저 목업 데이터) | 배포 완료, 추가 작업 없음 |
-| 로컬 PC | http://localhost:8000 | FastAPI가 API + 프런트엔드 제공 (`uvicorn`) | `.env` 작성 예정 |
-| Render | https://picktiming.onrender.com | **단독 풀스택**: FastAPI가 API + 프런트엔드를 같은 도메인으로 제공 (Docker, 무료 플랜). 커밋 → CI 통과 → 자동 배포 | 일부 설정됨 |
-| AWS EC2 | http://picktiming.duckdns.org | **단독 풀스택**: nginx(프런트엔드) + FastAPI + RPA 수집기 (docker compose) | 도메인만 준비됨 |
+| Netlify | https://picktiming.netlify.app | **프런트엔드 전용 — 데모 모드** | 새 UI 배포 확인 |
+| 로컬 PC | http://localhost:8000 | FastAPI가 빌드한 React + API 제공 | 운영 DB 사용 시 데이터 변경 주의 |
+| Render | https://picktiming.onrender.com | **단독 풀스택**: React + FastAPI, 같은 도메인 (Docker, 무료 플랜) | 새 UI·헬스·공개 추천 API 확인 |
+| AWS EC2 | http://picktiming.duckdns.org | **단독 풀스택 구성**: nginx + FastAPI + RPA | 실제 운영 확인 전 |
 | TiDB Cloud | (TiDB 접속 주소) | **유일한 DB — 로컬·Render·EC2가 같은 DB를 공유** | DB 생성 완료 |
 | MySQL 8 | GitHub Actions CI | MySQL 호환성 자동 테스트 전용 | CI에 이미 구성됨 |
-| GitHub Actions | — | CI/CD + **Render용 가격 수집(매시 예약 실행)** | 값 등록 예정 |
+| GitHub Actions | — | CI/CD + **Render용 가격 수집(매시 예약 실행)** | CI 통과, 대상별 실제 배포 단계 별도 확인 |
 
 **설정 파일은 `.env` 하나**: 로컬에서 작성 → EC2로 `scp` 복사 → Render는 Environment → "Add from .env"로 같은 내용을 붙여 넣기.
 
@@ -30,7 +42,7 @@
  (매시 07분 수집) ─┘
 ```
 
-- **독립 동작**: Render와 EC2는 서로를 호출하지 않습니다. 한쪽이 멈춰도 다른 쪽은 화면·API·가격 수집이 모두 동작합니다.
+- **독립 구성**: Render와 EC2는 서로를 호출하지 않습니다. 두 환경의 운영이 확인되면 독립적으로 사용할 수 있습니다.
 - **가격 수집 두 갈래**: EC2는 자체 `rpa` 컨테이너, Render는 GitHub Actions 예약 실행(`collect-render.yml`)이 수집기를 돌립니다.
   둘 다 같은 TiDB에 저장하므로, API가 **같은 판매처·같은 시간대(정시~59분)의 두 번째 가격은 건너뜁니다**(중복 저장 방지).
 - **데이터 공유**: 회원·관심 상품·가격 이력이 공유되므로 어느 주소로 접속해도 같은 데이터가 보입니다.
@@ -43,7 +55,7 @@
 |---|---|---|
 | 01 | [프로젝트 개요와 구조](01-project-overview.md) | 서비스 흐름, 기술 스택, 폴더 구조, 환경별 차이 |
 | 02 | [백엔드(FastAPI)](02-backend.md) | 설정(환경 변수), DB 테이블 12개, API 목록, 프런트엔드 서빙, AI·ML |
-| 03 | [프런트엔드](03-frontend.md) | 화면 10개, 데모 모드와 같은 도메인 연동, `config.js` 동작 |
+| 03 | [프런트엔드](03-frontend.md) | React 통합 UI·가입·차트·알림, 데모/운영 연동 |
 | 04 | [RPA 수집기](04-rpa.md) | 수집 작업 4종, EC2 컨테이너와 GitHub Actions 두 실행 경로 |
 | 05 | [CI/CD 파이프라인](05-cicd.md) | `ci.yml`, `deploy.yml`, `collect-render.yml`, 바뀐 폴더별 배포 판별 |
 
@@ -52,9 +64,9 @@
 | 번호 | 문서 | 할 일 |
 |---|---|---|
 | 06 | [DB 준비: TiDB 공용 · `.env` 작성](06-database.md) | TiDB 접속 문자열, 로컬 `.env`, 시드 데이터 |
-| 07 | [Render 배포 (단독 풀스택)](07-deploy-render.md) | 서비스 설정·환경 변수·자동 배포 끄기·확인 |
+| 07 | [Render 배포 (단독 풀스택)](07-deploy-render.md) | 서비스 설정·환경 변수·CI 후 자동 배포·확인 |
 | 08 | [EC2 배포 (단독 풀스택, DuckDNS)](08-deploy-ec2.md) | 인스턴스·고정 IP·DuckDNS·Docker·`.env`·시드 |
-| 09 | [Netlify (데모 모드 유지)](09-netlify-connect.md) | 확인만 — 추가 작업 없음 |
+| 09 | [Netlify (데모 모드 유지)](09-netlify-connect.md) | React 빌드·저장소 연결·게시 상태 확인 |
 | 10 | [GitHub Actions 등록 (자동 배포 + Render 수집)](10-github-actions-setup.md) | Secrets·Variables 등록, 첫 실행 확인 |
 | 11 | [최종 점검과 문제 해결](11-checklist-troubleshooting.md) | 점검표, 자주 나는 오류와 해결법 |
 
