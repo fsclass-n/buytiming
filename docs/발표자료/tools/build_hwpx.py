@@ -60,7 +60,7 @@ def save_package(source, target, section, title):
                 # 본문 외 메타데이터에도 이전 서비스명·작성자명이 남지 않게 한다.
                 raw = data.decode("utf-8")
                 raw = raw.replace("BuyTiming", "PickTiming").replace("바이타이밍", "픽타이밍")
-                raw = raw.replace("김길동", "박미금").replace("조휘일", "박미금")
+                raw = raw.replace("김길동", "김모란").replace("조휘일", "박미금")
                 data = raw.encode("utf-8")
             elif item.filename == "Preview/PrvImage.png":
                 # 오래된 본문의 썸네일을 남기지 않는다. 한글에서 저장 시 새로 생성된다.
@@ -200,7 +200,7 @@ def write_journal(index):
         elif key == "3 조":
             replace_cell(cells[-1], SERVICE)
         elif key == "팀원":
-            replace_cell(cells[-1], "박미금(조장), 김길동, 이오리, 홍기흥")
+            replace_cell(cells[-1], "박미금(조장), 김모란, 이오리, 홍기흥")
         elif key in JOURNALS[index]:
             replace_cell(cells[-1], JOURNALS[index][key])
         elif key == "마감회의":
@@ -211,7 +211,7 @@ def write_journal(index):
             replace_cell(cells[-1], "박미금 (서명)")
     for t in root.xpath("//hp:t", namespaces=NS):
         if t.text:
-            t.text = t.text.replace("발표 시간(15분)", "발표 시간(10분: PPT 3분·시연 7분)")
+            t.text = t.text.replace("발표 시간(15분)", "발표 시간(10분: PPT 3분·시연 7분)").replace("김길동", "김모란")
     # 변경 문구를 기준으로 한글이 줄 위치를 다시 계산하도록 기존 캐시를 제거한다.
     for cached in root.xpath("//hp:linesegarray", namespaces=NS):
         cached.getparent().remove(cached)

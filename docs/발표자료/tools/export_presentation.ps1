@@ -1,8 +1,8 @@
-param([string]$DocsRoot = (Join-Path $PSScriptRoot '..\..'))
+param([string]$DocsRoot = (Join-Path $PSScriptRoot '..\..'), [string]$Name = '프로젝트_발표자료')
 $ErrorActionPreference = 'Stop'
 $docs = (Resolve-Path $DocsRoot).Path
-$source = Join-Path $docs '프로젝트_발표자료.pptx'
-$pdf = Join-Path $docs 'pdf\프로젝트_발표자료.pdf'
+$source = Join-Path $docs "$Name.pptx"
+$pdf = Join-Path $docs "pdf\$Name.pdf"
 $ppt = New-Object -ComObject PowerPoint.Application
 $deck = $null
 try {
@@ -29,10 +29,11 @@ try {
     }
     $report = [PSCustomObject]@{
         Renderer = 'Microsoft PowerPoint'
+        File = "$Name.pptx"
         Slides = $deck.Slides.Count
         TextHeightIssues = $issues
     }
-    $report | ConvertTo-Json -Depth 5 | Set-Content -Encoding UTF8 (Join-Path $docs '발표자료\powerpoint-check.json')
+    $report | ConvertTo-Json -Depth 5 | Set-Content -Encoding UTF8 (Join-Path $docs "발표자료\powerpoint-check-$Name.json")
     if ($issues.Count -gt 0) { throw "Text height overflow: $($issues.Count)" }
     Write-Output "Exported $($deck.Slides.Count) slides; text height overflow: 0"
 }

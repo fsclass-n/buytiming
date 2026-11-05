@@ -174,7 +174,7 @@ def bullets(slide, items, x, y, w, row=.46, size=16, mark=CYAN, tint=GRAY):
         text(slide, item, x + .24, y + i * row, w - .24, row, size, tint)
 
 
-def base(slide, index, eyebrow, title=None):
+def base(slide, index, eyebrow, title=None, total=TOTAL, footer="PickTiming  ·  3조  ·  Final Project"):
     # 원본 PPT 패키지(판형·노트 구조)를 유지하고 슬라이드 도형만 새로 구성한다.
     for shape in list(slide.shapes):
         shape._element.getparent().remove(shape._element)
@@ -194,9 +194,9 @@ def base(slide, index, eyebrow, title=None):
     if title:
         text(slide, title, .6, .78, 12.1, .72, 30, WHITE, True)
     line(slide, .6, 7.0, 12.75, 7.0, BORDER, .7)
-    line(slide, .6, 7.0, .6 + 12.15 * index / TOTAL, 7.0, CYAN, 1.8)
-    text(slide, "PickTiming  ·  3조  ·  Final Project", .6, 7.1, 8, .26, 10, MUTED)
-    text(slide, f"{index:02d} / {TOTAL:02d}", 11.6, 7.08, 1.15, .28, 12, GRAY, align=PP_ALIGN.RIGHT)
+    line(slide, .6, 7.0, .6 + 12.15 * index / total, 7.0, CYAN, 1.8)
+    text(slide, footer, .6, 7.1, 8, .26, 10, MUTED)
+    text(slide, f"{index:02d} / {total:02d}", 11.6, 7.08, 1.15, .28, 12, GRAY, align=PP_ALIGN.RIGHT)
 
 
 def slide_cover(s):
@@ -207,8 +207,11 @@ def slide_cover(s):
     text(s, "생성형 AI & RPA 기반 실시간 가격 비교 · 구매 타이밍 추천", .64, 4.3, 6.5, .38, 16, GRAY)
     line(s, .64, 4.92, 1.55, 4.92, CYAN, 3)
     text(s, "3조   |   발표 · 조장 [[박미금]]", .64, 5.15, 6.4, .45, 21, WHITE, True)
-    text(s, "팀원   박미금 · 김길동 · 이오리 · 홍기흥", .64, 5.7, 6.4, .34, 15, GRAY)
-    text(s, "2026-12-18  프로젝트 발표회", .64, 6.15, 6.4, .3, 13, MUTED)
+    for i, (name, role) in enumerate([("박미금", "조장·PM·데이터/AI"), ("김모란", "백엔드·배포"),
+                                      ("이오리", "프런트엔드·UI/UX"), ("홍기흥", "RPA·데이터 수집")]):
+        x, y = .64 + (i % 2) * 3.25, 5.66 + (i // 2) * .34
+        text(s, f"[[{name}]]  {role}", x, y, 3.2, .32, 13, GRAY, accent=WHITE)
+    text(s, "2026-12-18  프로젝트 발표회", .64, 6.4, 6.4, .3, 12, MUTED)
     box(s, 7.3, 1.25, 5.45, 5.1, CARD, BLUE)
     text(s, "LIVE SERVICE", 7.58, 1.48, 3, .3, 12, CYAN, True)
     text(s, "어디서 살까 → [[언제 살까]]", 7.58, 1.82, 4.9, .45, 21, WHITE, True)
@@ -491,7 +494,7 @@ def main():
     props = deck.core_properties
     props.title = "PickTiming · 3조 최종 발표"
     props.subject = "PPT 3분 + 웹 시연 7분"
-    props.author = "3조 · 박미금 · 김길동 · 이오리 · 홍기흥"
+    props.author = "3조 · 박미금 · 김모란 · 이오리 · 홍기흥"
     props.keywords = "PickTiming, 가격 비교, 구매 타이밍, Navy Tech"
     props.comments = "원본 13장을 10장으로 리디자인. 확인되지 않은 성과 수치는 제외."
     deck.save(OUT / "프로젝트_발표자료.pptx")

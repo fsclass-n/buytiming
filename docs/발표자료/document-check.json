@@ -2,7 +2,7 @@
   "pdfs": [
     {
       "file": "pdf/산출물/01_기획분석_산출물.pdf",
-      "pages": 15,
+      "pages": 14,
       "out_of_page_text": [],
       "empty_pages": []
     },
@@ -27,6 +27,12 @@
     {
       "file": "pdf/산출물/05_피드백_산출물.pdf",
       "pages": 4,
+      "out_of_page_text": [],
+      "empty_pages": []
+    },
+    {
+      "file": "pdf/포트폴리오_PickTiming.pdf",
+      "pages": 18,
       "out_of_page_text": [],
       "empty_pages": []
     },
@@ -92,5 +98,8 @@
   "speaker_notes_match_script": true,
   "timing_matches_script": true,
   "script_budget_seconds": 170,
-  "pdf_pages_match_slides": true
+  "pdf_pages_match_slides": true,
+  "portfolio_slides": 18,
+  "portfolio_notes_complete": true,
+  "portfolio_pdf_pages_match": true
 }
