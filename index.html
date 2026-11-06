@@ -146,9 +146,9 @@
     .team { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
     .team strong { display: block; font-size: 16px; margin-bottom: 6px; }
     .team p { color: var(--muted); font-size: 13px; }
-    .team-profile { display: block; padding: 16px; margin: -16px 0 0 -16px; border: 1px solid #a4c5c3; border-radius: 8px; background: #f5fbfa; text-decoration: none; transition: background .2s, border-color .2s; }
-    .team-profile:hover, .team-profile:focus-visible { background: #fff; border-color: var(--teal); }
-    .profile-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; color: var(--teal); font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
+    .team-profile { display: block; align-self: start; justify-self: start; text-decoration: none; }
+    .team-profile:hover .profile-link, .team-profile:focus-visible .profile-link { color: var(--ink); }
+    .profile-link { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; margin-top: 6px; color: var(--teal); font-size: 12px; font-weight: 500; text-decoration: underline; text-underline-offset: 4px; }
     .site-footer { padding: 30px 0; }
     .footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 30px; }
     .footer-inner p { font-size: 12px; color: var(--muted); }
@@ -434,7 +434,7 @@
         <div class="team">
           <a class="team-profile" href="https://w-folio.netlify.app/" target="_blank" rel="noopener noreferrer" aria-label="박미금 개인 포트폴리오 보기 (새 탭)">
             <strong>박미금</strong><p>조장 · PM · 데이터/AI</p>
-            <span class="profile-link">개인 포트폴리오 보기 <span aria-hidden="true">↗</span></span>
+            <span class="profile-link">개인 포트폴리오 <span aria-hidden="true">↗</span></span>
           </a>
           <div><strong>김모란</strong><p>백엔드 · 배포</p></div>
           <div><strong>이오리</strong><p>프런트엔드 · UI/UX</p></div>
