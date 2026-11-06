@@ -26,7 +26,7 @@ def main():
              "`3조_final.mp4`는 이 문서와 같은 장면 정의(`tools/video_scenes.py`)로 자동 제작했습니다. 아래 표가 영상의 실제 시간표입니다.", "",
              "| 항목 | 내용 |", "|---|---|",
              "| 길이·형식 | 10:00, 1920×1080, 30fps, H.264 High + AAC |",
-             "| 발표자 | 조장 박미금(내레이션은 남성 한국어 합성 음성 `ko-KR-InJoonNeural`, 실제 녹음으로 교체 가능) |",
+             "| 발표자 | 조장 박미금(내레이션은 남성 신경망 합성 음성 `ko-KR-HyunsuMultilingualNeural`, 문장 사이 쉼·목소리 보정, 실제 녹음으로 교체 가능) |",
              "| PPT | `docs/프로젝트_발표자료.pptx` 18장 — 1~16장(00:00–03:00), 17·18장(09:00–10:00) |",
              "| 시연 | Netlify 데모(운영 DB 변경 없음) → Render `/docs` → GitHub Actions |",
              "| 자막 | 화면에 한국어 자막을 넣었고, 별도 파일 `3조_final.srt`도 제공 |", "",
@@ -74,8 +74,9 @@ def main():
               "# PowerShell: export_slides.ps1 <pptx 경로> <작업폴더>\\slides",
               "python record_demo.py         # 데모 녹화(공개 데모·API 문서·GitHub만 사용)",
               "python compose.py --rebuild   # 합성·자막·인코딩·하이라이트·썸네일",
-              "python check_final.py         # 길이·스트림·주요 프레임 확인", "```", "",
-              "대본을 바꾸면 `video_scenes.py`만 고치고 위 순서로 다시 만듭니다. 실제 목소리로 바꾸려면 `tts/장면ID.mp3`를 녹음 파일로 교체합니다.", ""]
+              "python check_final.py         # 길이·스트림·주요 프레임 확인",
+              "python audio_check.py         # 장면별 내레이션 음량 확인", "```", "",
+              "대본을 바꾸면 `video_scenes.py`만 고치고 위 순서로 다시 만듭니다. 실제 목소리로 바꾸려면 `tts/장면ID.wav`를 녹음 파일로 교체합니다.", ""]
     (OUT / "영상_대본_및_연출가이드.md").write_text("\n".join(lines), encoding="utf-8")
 
     chapters = [("00:00", "PPT 발표 — 팀 역할·아키텍처·기술 선택·역할별 심화·문제 해결·테스트"), ("03:00", "화면 전환 — 데모 사이트"),

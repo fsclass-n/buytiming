@@ -4,7 +4,6 @@ import subprocess
 from pathlib import Path
 
 import imageio_ffmpeg
-
 from video_scenes import timeline
 
 FF = imageio_ffmpeg.get_ffmpeg_exe()
