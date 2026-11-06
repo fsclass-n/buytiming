@@ -9,7 +9,7 @@ from pathlib import Path
 import imageio_ffmpeg
 from video_scenes import PARTS, timeline
 
-WORK = Path(sys.argv[1] if len(sys.argv) > 1 else "C:/Users/pc06-00/AppData/Local/Temp/pt-video")
+WORK = Path(next((a for a in sys.argv[1:] if not a.startswith("--")), "C:/Users/pc06-00/AppData/Local/Temp/pt-video"))
 OUT = Path(__file__).resolve().parents[1]
 FF = imageio_ffmpeg.get_ffmpeg_exe()
 PX = 1920 / 13.333
@@ -46,14 +46,15 @@ def slide_clip(s, path):
     if s["id"] == "C18":
         fades.append(f"fade=t=out:st={s['dur'] - 1.5}:d=1.5")
     vf = ",".join(["scale=1920:1080", "fps=30", "format=yuv420p", *boxes, *fades])
-    ff("-loop", 1, "-t", s["dur"], "-i", WORK / "slides" / f"slide{s['slide']:02d}.png", "-vf", vf,
-       "-c:v", "libx264", "-preset", "medium", "-crf", 16, "-r", 30, path)
+    ff("-loop", 1, "-t", s["dur"] + 1, "-i", WORK / "slides" / f"slide{s['slide']:02d}.png", "-vf", vf,
+       "-frames:v", s["dur"] * 30, "-c:v", "libx264", "-preset", "medium", "-crf", 16, "-r", 30, path)
 
 
 def demo_clip(s, video, mark, path):
     fades = ["fade=t=in:st=0:d=0.5"] if s["id"] == "D01" else []
-    vf = ",".join(["scale=1920:1080", "fps=30", "format=yuv420p", *fades])
-    ff("-ss", f"{mark:.3f}", "-t", s["dur"], "-i", video, "-vf", vf, "-an", "-c:v", "libx264", "-preset", "medium", "-crf", 16, "-r", 30, path)
+    vf = ",".join(["scale=1920:1080", "fps=30", "tpad=stop_mode=clone:stop_duration=2", "format=yuv420p", *fades])
+    ff("-ss", f"{mark:.3f}", "-t", s["dur"] + 1, "-i", video, "-vf", vf, "-an", "-frames:v", s["dur"] * 30,
+       "-c:v", "libx264", "-preset", "medium", "-crf", 16, "-r", 30, path)
 
 
 def chunks(text, limit=36):
@@ -190,7 +191,8 @@ def main():
         shutil.copy(Path("C:/Windows/Fonts") / f, fonts / f)
     vf = "subtitles=subs.ass:fontsdir=fonts"
     common = ["-i", "video_only.mp4", "-i", "narration.wav", "-map", "0:v", "-map", "1:a", "-vf", vf,
-              "-c:v", "libx264", "-preset", "slow", "-profile:v", "high", "-b:v", "1100k", "-r", 30]
+              "-c:v", "libx264", "-preset", "slow", "-profile:v", "high", "-b:v", "1100k", "-maxrate", "3000k", "-bufsize", "6000k",
+              "-x264-params", "keyint=150:min-keyint=30", "-r", 30]
     ff(*common, "-pass", 1, "-passlogfile", "pass", "-an", "-f", "mp4", "NUL", cwd=WORK)
     final = OUT / "3조_final.mp4"
     ff(*common, "-pass", 2, "-passlogfile", "pass", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", final, cwd=WORK)

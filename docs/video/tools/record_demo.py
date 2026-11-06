@@ -24,8 +24,9 @@ OVERLAY = """
     #pt-cursor.down{transform:scale(.7)}
     .pt-ring{position:fixed;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;border:3px solid #facc15;pointer-events:none;
     z-index:2147483646;animation:ptring .6s ease-out forwards}@keyframes ptring{to{transform:scale(3.2);opacity:0}}
-    .pt-hl{position:fixed;border:3px solid #22d3ee;border-radius:12px;box-shadow:0 0 0 9999px rgba(11,18,32,.18),0 0 18px rgba(34,211,238,.55);
-    pointer-events:none;z-index:2147483645;transition:opacity .3s}`;
+    .pt-hl{position:fixed;border:3px solid #22d3ee;border-radius:12px;box-shadow:0 0 14px rgba(34,211,238,.45);
+    pointer-events:none;z-index:2147483645;opacity:0;transition:opacity .3s ease}
+    main{min-height:100vh}`;
   const boot = () => {
     if (document.getElementById('pt-cursor')) return;
     const st = document.createElement('style'); st.textContent = css; document.documentElement.appendChild(st);
@@ -40,7 +41,8 @@ OVERLAY = """
   };
   window.__ptHL = (x, y, w, h, ms) => { const d = document.createElement('div'); d.className = 'pt-hl';
     Object.assign(d.style, {left: (x - 6) + 'px', top: (y - 6) + 'px', width: (w + 12) + 'px', height: (h + 12) + 'px'});
-    document.documentElement.appendChild(d); setTimeout(() => { d.style.opacity = 0; setTimeout(() => d.remove(), 350); }, ms); };
+    document.documentElement.appendChild(d); requestAnimationFrame(() => requestAnimationFrame(() => { d.style.opacity = 1; }));
+    setTimeout(() => { d.style.opacity = 0; setTimeout(() => d.remove(), 350); }, ms); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
 """
@@ -52,6 +54,12 @@ class Director:
 
     def wait(self, sec):
         time.sleep(sec)
+
+    def nav(self, path, settle=1.0):
+        """앱 안에서 주소만 바꿔 이동한다. 전체 새로고침의 흰 화면 깜박임을 막는다."""
+        self.page.evaluate("p => { history.pushState({}, '', p); dispatchEvent(new PopStateEvent('popstate')); scrollTo(0, 0); }", path)
+        self.page.wait_for_load_state("networkidle")
+        self.wait(settle)
 
     def move(self, target, pause=.7):
         if isinstance(target, tuple):
@@ -88,7 +96,9 @@ class Director:
             self.wait(.06)
         self.wait(.5)
 
-    def scene(self, sid, fn):
+    def scene(self, sid, fn, pre=None):
+        if pre:
+            pre()
         start = time.monotonic()
         self.marks[sid] = round(start - self.t0, 3)
         fn()
@@ -132,7 +142,7 @@ def run():
             d.hl(sec.locator("article").first, 3500)
 
         def d03():
-            page.goto(BASE + "/signup")
+            d.nav("/signup")
             d.wait(1)
             d.click(page.get_by_label("서비스 이용 안내에 동의합니다 (필수)"), .4)
             d.click(page.get_by_label("개인정보 처리 안내에 동의합니다 (필수)"), .4)
@@ -141,7 +151,7 @@ def run():
             d.click(page.get_by_role("button", name="디지털", exact=True), 1)
 
         def d04():
-            page.goto(BASE + "/login")
+            d.nav("/login")
             d.wait(1.2)
             d.hl(page.get_by_role("button", name="일반 사용자 테스트"), 1800)
             d.click(page.get_by_role("button", name="일반 사용자 테스트"), .5)
@@ -149,7 +159,7 @@ def run():
             d.hl(page.get_by_role("button", name="로그아웃").first, 2000)
 
         def d05():
-            page.goto(BASE + "/search")
+            d.nav("/search")
             box = page.get_by_role("search", name="결과 내 상품 검색").get_by_role("searchbox")
             d.click(box, .3)
             box.type("이어폰", delay=140)
@@ -191,7 +201,7 @@ def run():
             d.hl(page.get_by_role("log"), 4200)
 
         def d09():
-            page.goto(BASE + "/product/1")
+            d.nav("/product/1")
             d.wait(1.3)
             d.click(page.get_by_role("button", name="목표가 알림", exact=True).first, 1)
             field = page.get_by_role("dialog").get_by_label("목표 가격 (원)")
@@ -201,18 +211,18 @@ def run():
             d.click(page.get_by_role("dialog").get_by_role("button", name="알림 저장"), .8)
             d.hl(page.get_by_role("dialog").get_by_text("목표가 알림이 저장되었습니다."), 2200)
             page.keyboard.press("Escape")
-            page.goto(BASE + "/watchlist")
+            d.nav("/watchlist")
             d.wait(1)
             d.hl(page.get_by_text("115,000원", exact=True).locator("xpath=ancestor::article[1]"), 3000)
 
         def d10():
-            page.goto(BASE + "/alerts")
+            d.nav("/alerts")
             d.wait(1)
             d.hl(page.get_by_role("main").locator("ul, ol").first, 2600)
             d.click(page.get_by_role("button", name="모두 읽음"), 1)
 
         def d11():
-            page.goto(BASE + "/admin")
+            d.nav("/admin")
             heading = page.get_by_role("heading", name="관리자 전용 화면입니다")
             expect(heading).to_be_visible()
             d.wait(.6)
@@ -221,7 +231,7 @@ def run():
 
         def d12():
             d.click(page.get_by_role("button", name="로그아웃").first, .8)
-            page.goto(BASE + "/login")
+            d.nav("/login")
             d.wait(.8)
             d.click(page.get_by_role("button", name="관리자 테스트"), .8)
             center = page.get_by_role("link", name="관리자 센터")
@@ -268,20 +278,27 @@ def run():
             expect(msg).to_be_visible()
             d.hl(msg, 5000)
 
-        def d16():
+        def d16_pre():
             page.goto(RENDER + "/docs")
             page.wait_for_selector(".opblock", timeout=90000)
-            d.wait(1.2)
+            page.wait_for_load_state("networkidle")
+            d.wait(1.5)
+
+        def d16():
+            d.wait(.8)
             d.hl(page.locator(".opblock-tag-section").first, 2600)
             d.move((960, 700), .2)
             for _ in range(3):
                 d.scroll(700)
             d.hl(page.locator(".opblock-tag-section").nth(2), 2400)
 
-        def d17():
+        def d17_pre():
             page.goto(f"https://github.com/fsclass-n/picktiming/actions/runs/{run_id}")
             page.wait_for_load_state("networkidle")
-            d.wait(1.2)
+            d.wait(1.5)
+
+        def d17():
+            d.wait(.8)
             jobs = page.get_by_text("ci / Backend (pytest on MySQL 8)").first
             try:
                 d.hl(jobs.locator("xpath=ancestor::ul[1]"), 4200)
@@ -292,7 +309,7 @@ def run():
         for sid, fn in [("D01", d01), ("D02", d02), ("D03", d03), ("D04", d04), ("D05", d05), ("D06", d06), ("D07", d07),
                         ("D08", d08), ("D09", d09), ("D10", d10), ("D11", d11), ("D12", d12), ("D13", d13), ("D14", d14),
                         ("D15", d15), ("D16", d16), ("D17", d17)]:
-            d.scene(sid, fn)
+            d.scene(sid, fn, {"D16": d16_pre, "D17": d17_pre}.get(sid))
         video = page.video
         ctx.close()
         browser.close()
