@@ -24,7 +24,7 @@ def ff(*args, cwd=None):
 
 
 def speech_len(sid):
-    out = subprocess.run([FF, "-i", str(WORK / "tts" / f"{sid}.mp3")], capture_output=True, text=True).stderr
+    out = subprocess.run([FF, "-i", str(WORK / "tts" / f"{sid}.wav")], capture_output=True, text=True).stderr
     h, m, s = out.split("Duration: ")[1].split(",")[0].split(":")
     return int(h) * 3600 + int(m) * 60 + float(s)
 
@@ -177,7 +177,7 @@ def main():
     voiced = [s for s in scenes if s["say"]]
     inputs, delays = [], []
     for i, s in enumerate(voiced):
-        inputs += ["-i", WORK / "tts" / f"{s['id']}.mp3"]
+        inputs += ["-i", WORK / "tts" / f"{s['id']}.wav"]
         ms = int((s["start"] + LEAD) * 1000)
         delays.append(f"[{i}:a]aresample=48000,adelay={ms}|{ms}[a{i}]")
     mix = ";".join(delays) + ";" + "".join(f"[a{i}]" for i in range(len(voiced))) + \
@@ -195,7 +195,8 @@ def main():
               "-x264-params", "keyint=150:min-keyint=30", "-r", 30]
     ff(*common, "-pass", 1, "-passlogfile", "pass", "-an", "-f", "mp4", "NUL", cwd=WORK)
     final = OUT / "3조_final.mp4"
-    ff(*common, "-pass", 2, "-passlogfile", "pass", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", final, cwd=WORK)
+    audio = ["-c:a", "aac", "-b:a", "160k", "-ac", 2, "-ar", 48000, "-metadata:s:a:0", "language=kor"]
+    ff(*common, "-pass", 2, "-passlogfile", "pass", *audio, "-movflags", "+faststart", final, cwd=WORK)
     ff("-ss", "00:04:25", "-t", 60, "-i", final, "-vf", "scale=1280:-2", "-c:v", "libx264", "-preset", "slow", "-b:v", "1000k",
        "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", OUT / "3조_highlight.mp4")
     ff("-ss", "00:04:40", "-i", final, "-frames:v", 1, OUT / "video-thumbnail.png")
