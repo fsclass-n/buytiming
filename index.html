@@ -43,7 +43,6 @@
     .header-inner { min-height: 80px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
     .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 800; text-decoration: none; letter-spacing: -.8px; }
     .brand img { width: 34px; height: 34px; }
-    .brand small { margin-left: 12px; padding-left: 18px; border-left: 1px solid var(--line); font-size: 12px; font-weight: 500; letter-spacing: .02em; color: var(--muted); }
     .nav { display: flex; align-items: center; gap: 30px; }
     .nav a { display: flex; align-items: center; min-height: 44px; font-size: 14px; text-decoration: none; }
     .nav a:hover { color: var(--violet); }
@@ -147,6 +146,9 @@
     .team { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
     .team strong { display: block; font-size: 16px; margin-bottom: 6px; }
     .team p { color: var(--muted); font-size: 13px; }
+    .team-profile { display: block; padding: 16px; margin: -16px 0 0 -16px; border: 1px solid #a4c5c3; border-radius: 8px; background: #f5fbfa; text-decoration: none; transition: background .2s, border-color .2s; }
+    .team-profile:hover, .team-profile:focus-visible { background: #fff; border-color: var(--teal); }
+    .profile-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; color: var(--teal); font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
     .site-footer { padding: 30px 0; }
     .footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 30px; }
     .footer-inner p { font-size: 12px; color: var(--muted); }
@@ -197,7 +199,6 @@
       .hero-copy > p { font-size: 14px; }
       .hero-stack { margin-top: 20px; }
       .highlight-grid, .engineering { gap: 36px; }
-      .brand small { display: none; }
     }
     @media (max-width: 800px) {
       .wrap { width: calc(100% - 40px); }
@@ -261,7 +262,7 @@
     <div class="wrap header-inner">
       <a class="brand" href="#main" aria-label="PickTiming 포트폴리오 처음으로">
         <img src="./frontend/public/favicon.svg" alt="" width="34" height="34">
-        PickTiming<small>Project portfolio</small>
+        PickTiming
       </a>
       <nav class="nav" aria-label="주요 메뉴">
         <a href="#films">발표·시연</a>
@@ -431,7 +432,10 @@
         </div>
         <div class="team-heading"><h3>함께 만든 사람들</h3><p>3조 팀 프로젝트 · 팀원명은 가상 인물로 표기했습니다.</p></div>
         <div class="team">
-          <div><strong>박미금</strong><p>조장 · PM · 데이터/AI</p></div>
+          <a class="team-profile" href="https://w-folio.netlify.app/" target="_blank" rel="noopener noreferrer" aria-label="박미금 개인 포트폴리오 보기 (새 탭)">
+            <strong>박미금</strong><p>조장 · PM · 데이터/AI</p>
+            <span class="profile-link">개인 포트폴리오 보기 <span aria-hidden="true">↗</span></span>
+          </a>
           <div><strong>김모란</strong><p>백엔드 · 배포</p></div>
           <div><strong>이오리</strong><p>프런트엔드 · UI/UX</p></div>
           <div><strong>홍기흥</strong><p>RPA · 데이터 수집</p></div>
